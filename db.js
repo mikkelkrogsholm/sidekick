@@ -163,4 +163,67 @@ export function getSessionTranscripts(sessionId) {
   return stmt.all(sessionId);
 }
 
+// Delete a session and all its associated embeddings
+export function deleteSession(sessionId) {
+  try {
+    // Use a transaction to ensure both deletions happen atomically
+    const deleteTranscripts = db.prepare(`
+      delete from vec_transcripts where session_id = ?
+    `);
+    const deleteSessionStmt = db.prepare(`
+      delete from sessions where id = ?
+    `);
+    
+    const transaction = db.transaction(() => {
+      const transcriptResult = deleteTranscripts.run(sessionId);
+      const sessionResult = deleteSessionStmt.run(sessionId);
+      return {
+        transcriptsDeleted: transcriptResult.changes,
+        sessionDeleted: sessionResult.changes > 0
+      };
+    });
+    
+    return transaction();
+  } catch (err) {
+    console.error("Error deleting session:", err);
+    throw err;
+  }
+}
+
+// Delete an individual embedding by rowid
+export function deleteEmbedding(rowid) {
+  try {
+    const stmt = db.prepare(`
+      delete from vec_transcripts where rowid = ?
+    `);
+    const result = stmt.run(rowid);
+    return result.changes > 0;
+  } catch (err) {
+    console.error("Error deleting embedding:", err);
+    throw err;
+  }
+}
+
+// Recalculate transcript count for a session after deletion
+export function recalculateTranscriptCount(sessionId) {
+  try {
+    const countStmt = db.prepare(`
+      select count(*) as count from vec_transcripts where session_id = ?
+    `);
+    const updateStmt = db.prepare(`
+      update sessions 
+      set total_transcripts = ?, 
+          updated_at = ?
+      where id = ?
+    `);
+    
+    const count = countStmt.get(sessionId).count;
+    updateStmt.run(count, new Date().toISOString(), sessionId);
+    return count;
+  } catch (err) {
+    console.error("Error recalculating transcript count:", err);
+    throw err;
+  }
+}
+
 export default db;

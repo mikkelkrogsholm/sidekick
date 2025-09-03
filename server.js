@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
-import db, { insertEmbedding, createSession, getSessions, getSession, updateSessionTranscriptCount, getSessionTranscripts, searchSimilar } from "./db.js";
+import db, { insertEmbedding, createSession, getSessions, getSession, updateSessionTranscriptCount, getSessionTranscripts, searchSimilar, deleteSession, deleteEmbedding, recalculateTranscriptCount } from "./db.js";
 
 dotenv.config();
 
@@ -418,7 +418,7 @@ app.get("/api/embeddings", (req, res) => {
     let query;
     if (sessionId) {
       query = db.prepare(`
-        SELECT session_id, started_at, ended_at, language, content, 
+        SELECT rowid, session_id, started_at, ended_at, language, content, 
                length(content) as content_length
         FROM vec_transcripts
         WHERE session_id = ?
@@ -429,7 +429,7 @@ app.get("/api/embeddings", (req, res) => {
       res.json(embeddings);
     } else {
       query = db.prepare(`
-        SELECT session_id, started_at, ended_at, language, content,
+        SELECT rowid, session_id, started_at, ended_at, language, content,
                length(content) as content_length
         FROM vec_transcripts
         ORDER BY started_at DESC
@@ -474,6 +474,79 @@ app.post("/api/search", rateLimit, async (req, res) => {
   } catch (error) {
     console.error("Search error:", error);
     res.status(500).json({ error: "Search failed" });
+  }
+});
+
+// Delete a session and all its embeddings
+app.delete("/api/sessions/:id", rateLimit, (req, res) => {
+  const sessionId = req.params.id;
+  
+  try {
+    // Check if session exists
+    const session = getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+    
+    // Clear buffer if it exists for this session
+    if (buffers.has(sessionId)) {
+      buffers.delete(sessionId);
+      console.log(`Cleared buffer for session ${sessionId}`);
+    }
+    
+    // Delete session and embeddings
+    const result = deleteSession(sessionId);
+    
+    console.log(`Deleted session ${sessionId}: ${result.transcriptsDeleted} transcripts removed`);
+    
+    res.json({
+      message: "Session deleted successfully",
+      sessionId,
+      sessionName: session.name,
+      transcriptsDeleted: result.transcriptsDeleted
+    });
+  } catch (error) {
+    console.error("Error deleting session:", error);
+    res.status(500).json({ error: "Failed to delete session" });
+  }
+});
+
+// Delete an individual embedding
+app.delete("/api/embeddings/:rowid", rateLimit, (req, res) => {
+  const rowid = req.params.rowid;
+  const { sessionId } = req.body || {};
+  
+  try {
+    // Validate rowid is a number
+    const rowidNum = parseInt(rowid);
+    if (isNaN(rowidNum)) {
+      return res.status(400).json({ error: "Invalid embedding ID" });
+    }
+    
+    // Delete the embedding
+    const deleted = deleteEmbedding(rowidNum);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: "Embedding not found" });
+    }
+    
+    // Recalculate transcript count if session ID provided
+    let newCount = null;
+    if (sessionId) {
+      newCount = recalculateTranscriptCount(sessionId);
+      console.log(`Recalculated transcript count for session ${sessionId}: ${newCount}`);
+    }
+    
+    console.log(`Deleted embedding ${rowid}`);
+    
+    res.json({
+      message: "Embedding deleted successfully",
+      rowid: rowidNum,
+      newTranscriptCount: newCount
+    });
+  } catch (error) {
+    console.error("Error deleting embedding:", error);
+    res.status(500).json({ error: "Failed to delete embedding" });
   }
 });
 

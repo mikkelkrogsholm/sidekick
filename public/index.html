@@ -807,24 +807,45 @@
             }
         };
         
-        // Load saved session on page load
-        const savedSessionId = localStorage.getItem('currentSessionId');
-        const savedSessionName = localStorage.getItem('currentSessionName');
-        if (savedSessionId && savedSessionName) {
-            currentSessionId = savedSessionId;
-            currentSessionName = savedSessionName;
-            currentSessionNameSpan.textContent = savedSessionName;
-            currentSession.style.display = 'flex';
+        // Load saved session on page load and verify it still exists
+        async function loadSavedSession() {
+            const savedSessionId = localStorage.getItem('currentSessionId');
+            const savedSessionName = localStorage.getItem('currentSessionName');
             
-            // Update navigation session indicator
-            const navSession = document.getElementById('navSession');
-            if (navSession) {
-                const indicator = navSession.querySelector('.session-indicator');
-                const text = navSession.querySelector('.session-text');
-                indicator.classList.add('active');
-                text.textContent = savedSessionName;
+            if (savedSessionId && savedSessionName) {
+                // Verify session still exists
+                try {
+                    const response = await fetch(`/api/sessions/${savedSessionId}`);
+                    if (response.ok) {
+                        // Session exists, use it
+                        currentSessionId = savedSessionId;
+                        currentSessionName = savedSessionName;
+                        currentSessionNameSpan.textContent = savedSessionName;
+                        currentSession.style.display = 'flex';
+                        
+                        // Update navigation session indicator
+                        const navSession = document.getElementById('navSession');
+                        if (navSession) {
+                            const indicator = navSession.querySelector('.session-indicator');
+                            const text = navSession.querySelector('.session-text');
+                            indicator.classList.add('active');
+                            text.textContent = savedSessionName;
+                        }
+                    } else if (response.status === 404) {
+                        // Session was deleted, clear localStorage
+                        console.log('Saved session no longer exists, clearing...');
+                        localStorage.removeItem('currentSessionId');
+                        localStorage.removeItem('currentSessionName');
+                        currentSessionId = null;
+                        currentSessionName = 'None';
+                    }
+                } catch (error) {
+                    console.error('Error verifying saved session:', error);
+                }
             }
         }
+        
+        loadSavedSession();
         
         startBtn.onclick = async () => {
             if (!currentSessionId) {

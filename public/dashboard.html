@@ -324,6 +324,29 @@
             background: #e9ecef;
         }
         
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            border: none;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 5px rgba(220, 53, 69, 0.3);
+        }
+        
+        @keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+        }
+        
         /* Health Status */
         .health-status {
             position: fixed;
@@ -568,6 +591,9 @@
                                 <a href="/viewer.html?sessionId=${session.id}" class="btn btn-secondary">
                                     View
                                 </a>
+                                <button class="btn btn-danger" onclick="deleteSession('${session.id}', '${escapeHtml(session.name)}', ${session.total_transcripts})">
+                                    🗑️
+                                </button>
                             </div>
                         `;
                         sessionsList.appendChild(sessionItem);
@@ -596,6 +622,76 @@
         // Show search modal (placeholder)
         function showSearchModal() {
             window.location.href = '/viewer.html';
+        }
+        
+        // Select a session and save to localStorage
+        window.selectSession = function(id, name) {
+            localStorage.setItem('currentSessionId', id);
+            localStorage.setItem('currentSessionName', name);
+            
+            // Update UI
+            const sessionIndicator = document.getElementById('navSession');
+            if (sessionIndicator) {
+                const indicator = sessionIndicator.querySelector('.session-indicator');
+                const text = sessionIndicator.querySelector('.session-text');
+                indicator.classList.add('active');
+                text.textContent = name;
+            }
+            
+            // Show success message
+            alert(`Session "${name}" selected!`);
+        }
+        
+        // Delete a session
+        window.deleteSession = async function(id, name, transcriptCount) {
+            const message = transcriptCount > 0 
+                ? `Are you sure you want to delete session "${name}"?\nThis will also delete ${transcriptCount} transcript chunk(s).\nThis action cannot be undone.`
+                : `Are you sure you want to delete session "${name}"?\nThis action cannot be undone.`;
+            
+            if (!confirm(message)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/sessions/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to delete session');
+                }
+                
+                const result = await response.json();
+                console.log('Deleted session:', result);
+                
+                // If this was the current session, clear localStorage
+                const currentSessionId = localStorage.getItem('currentSessionId');
+                if (currentSessionId === id) {
+                    localStorage.removeItem('currentSessionId');
+                    localStorage.removeItem('currentSessionName');
+                    
+                    // Update UI to show no session
+                    const sessionIndicator = document.getElementById('navSession');
+                    if (sessionIndicator) {
+                        const indicator = sessionIndicator.querySelector('.session-indicator');
+                        const text = sessionIndicator.querySelector('.session-text');
+                        indicator.classList.remove('active');
+                        text.textContent = 'No Session';
+                    }
+                }
+                
+                // Reload sessions list
+                loadSessions();
+                
+                // Update stats
+                loadStats();
+                
+                // Show success message
+                alert(`Session "${name}" has been deleted successfully.`);
+            } catch (error) {
+                console.error('Error deleting session:', error);
+                alert('Failed to delete session. Please try again.');
+            }
         }
         
         // Load data on page load
