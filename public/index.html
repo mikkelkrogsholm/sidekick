@@ -15,10 +15,100 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            padding: 0;
+            margin: 0;
+        }
+        
+        /* Navigation Styles */
+        .navbar {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .nav-icon {
+            font-size: 1.5rem;
+        }
+        
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .nav-link {
+            color: #666;
+            text-decoration: none;
+            font-weight: 500;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            background: #f0f0f0;
+            color: #667eea;
+        }
+        
+        .nav-link.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .nav-session {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+        
+        .nav-session .session-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #dc3545;
+        }
+        
+        .nav-session .session-indicator.active {
+            background: #28a745;
+            animation: pulse-nav 2s infinite;
+        }
+        
+        @keyframes pulse-nav {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .main-content {
+            padding: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            min-height: calc(100vh - 70px);
         }
         
         .container {
@@ -35,6 +125,111 @@
             margin-bottom: 30px;
             text-align: center;
             font-size: 2.5rem;
+        }
+        
+        .session-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .session-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .session-list {
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        
+        .session-item {
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .session-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateY(-1px);
+        }
+        
+        .session-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .session-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .session-name {
+            font-weight: 600;
+        }
+        
+        .session-meta {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 2px;
+        }
+        
+        .new-session-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .new-session-input input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .new-session-input button {
+            padding: 10px 20px;
+            font-size: 14px;
+        }
+        
+        .current-session-display {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .session-indicator {
+            width: 8px;
+            height: 8px;
+            background: #28a745;
+            border-radius: 50%;
+            animation: pulse-green 2s infinite;
+        }
+        
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
         }
         
         .controls {
@@ -241,11 +436,105 @@
                 opacity: 0.7;
             }
         }
+        
+        /* Embedding notification styles */
+        .embedding-notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideInRight 0.3s ease;
+            z-index: 1001;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .embedding-notification.success {
+            border-left: 4px solid #28a745;
+        }
+        
+        .embedding-notification.processing {
+            border-left: 4px solid #ffc107;
+        }
+        
+        .embedding-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="nav-icon">🎙️</span>
+                <span>Voice Transcription</span>
+            </div>
+            <div class="nav-links">
+                <a href="/dashboard.html" class="nav-link">📊 Dashboard</a>
+                <a href="/" class="nav-link active">🎤 Transcribe</a>
+                <a href="/viewer.html" class="nav-link">📝 Viewer</a>
+            </div>
+            <div class="nav-session" id="navSession">
+                <span class="session-indicator"></span>
+                <span class="session-text">No Session</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="container"
         <h1>🎙️ Live Audio Transcription</h1>
+        
+        <div class="session-section">
+            <div class="session-header">
+                <div class="session-title">Session Management</div>
+                <button id="toggleSessionsBtn" style="padding: 5px 15px; font-size: 14px;">Show Sessions</button>
+            </div>
+            
+            <div id="currentSession" class="current-session-display" style="display: none;">
+                <div class="session-indicator"></div>
+                <div>
+                    <strong>Current Session:</strong> <span id="currentSessionName">None</span>
+                </div>
+            </div>
+            
+            <div id="sessionPanel" style="display: none;">
+                <div class="new-session-input">
+                    <input type="text" id="newSessionName" placeholder="Enter session name..." />
+                    <button id="createSessionBtn">Create New</button>
+                </div>
+                
+                <div class="session-list" id="sessionList">
+                    <!-- Sessions will be loaded here -->
+                </div>
+            </div>
+        </div>
         
         <div id="status" class="status idle">
             Ready to start transcription
@@ -285,6 +574,7 @@
             <div class="audio-bar"></div>
             <div class="audio-bar"></div>
         </div>
+        </div>
     </div>
 
     <script type="module">
@@ -294,16 +584,63 @@
         const transcript = document.getElementById('transcript');
         const status = document.getElementById('status');
         const audioIndicator = document.getElementById('audioIndicator');
+        const toggleSessionsBtn = document.getElementById('toggleSessionsBtn');
+        const sessionPanel = document.getElementById('sessionPanel');
+        const sessionList = document.getElementById('sessionList');
+        const newSessionName = document.getElementById('newSessionName');
+        const createSessionBtn = document.getElementById('createSessionBtn');
+        const currentSession = document.getElementById('currentSession');
+        const currentSessionNameSpan = document.getElementById('currentSessionName');
         
         let pc = null;
         let stream = null;
         let dc = null;  // Store data channel reference
         let currentTranscript = '';
         let transcriptBuffer = '';
+        let ingestQueue = [];  // Queue for batching transcript sends
+        let ingestTimer = null; // Timer for debouncing
+        let currentSessionId = null; // Will be set when session is selected/created
+        let currentSessionName = 'None';
         
         function updateStatus(text, className) {
             status.textContent = text;
             status.className = `status ${className}`;
+        }
+        
+        // Show embedding notification
+        function showEmbeddingNotification(message, type = 'processing') {
+            // Remove any existing notifications
+            const existingNotification = document.querySelector('.embedding-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `embedding-notification ${type}`;
+            
+            if (type === 'processing') {
+                notification.innerHTML = `
+                    <div class="embedding-spinner"></div>
+                    <span>${message}</span>
+                `;
+            } else {
+                notification.innerHTML = `
+                    <span>✓</span>
+                    <span>${message}</span>
+                `;
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    notification.style.animation = 'slideInRight 0.3s ease reverse';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+            
+            return notification;
         }
         
         function addTranscriptLine(text) {
@@ -320,7 +657,182 @@
             transcript.scrollTop = transcript.scrollHeight;
         }
         
+        // Session management functions
+        // Utility function to escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Debounced function to send transcripts to server
+        function sendTranscriptToServer(transcript) {
+            ingestQueue.push(transcript);
+            
+            // Clear existing timer
+            if (ingestTimer) {
+                clearTimeout(ingestTimer);
+            }
+            
+            // Set new timer to send after 500ms of no new transcripts
+            ingestTimer = setTimeout(async () => {
+                if (ingestQueue.length === 0) return;
+                
+                // Get all queued transcripts
+                const transcriptsToSend = [...ingestQueue];
+                ingestQueue = [];
+                
+                // Send all transcripts as a batch
+                for (const text of transcriptsToSend) {
+                    try {
+                        const response = await fetch('/ingest', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: currentSessionId,
+                                language: languageSelect.value || 'en',
+                                text: text
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            const err = await response.json();
+                            throw new Error(err.error || 'Failed to send transcript');
+                        }
+                    } catch (error) {
+                        console.error('Error sending transcript:', error);
+                        // Don't show error in UI for each transcript to avoid spam
+                    }
+                }
+            }, 500); // Wait 500ms before sending
+        }
+        
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions');
+                const sessions = await response.json();
+                
+                sessionList.innerHTML = sessions.length ? '' : '<div style="text-align: center; color: #999; padding: 20px;">No sessions yet</div>';
+                
+                sessions.forEach(session => {
+                    const item = document.createElement('div');
+                    item.className = 'session-item' + (session.id === currentSessionId ? ' active' : '');
+                    
+                    const date = new Date(session.created_at);
+                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                    
+                    item.innerHTML = `
+                        <div class="session-info">
+                            <div class="session-name">${escapeHtml(session.name)}</div>
+                            <div class="session-meta">${escapeHtml(formattedDate)} • ${session.total_transcripts} transcripts</div>
+                        </div>
+                    `;
+                    
+                    item.onclick = function() { selectSession(session, this); };
+                    sessionList.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                sessionList.innerHTML = '<div style="color: red; padding: 10px;">Error loading sessions</div>';
+            }
+        }
+        
+        function selectSession(session, element = null) {
+            currentSessionId = session.id;
+            currentSessionName = session.name;
+            currentSessionNameSpan.textContent = session.name;
+            currentSession.style.display = 'flex';
+            
+            // Update UI
+            document.querySelectorAll('.session-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to the clicked element if provided
+            if (element) {
+                element.classList.add('active');
+            }
+            
+            // Update navigation session indicator
+            const navSession = document.getElementById('navSession');
+            if (navSession) {
+                const indicator = navSession.querySelector('.session-indicator');
+                const text = navSession.querySelector('.session-text');
+                indicator.classList.add('active');
+                text.textContent = session.name;
+            }
+            
+            // Store in localStorage for persistence
+            localStorage.setItem('currentSessionId', session.id);
+            localStorage.setItem('currentSessionName', session.name);
+            
+            updateStatus(`Session selected: ${session.name}`, 'idle');
+        }
+        
+        createSessionBtn.onclick = async () => {
+            const name = newSessionName.value.trim();
+            if (!name) {
+                alert('Please enter a session name');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to create session');
+                }
+                
+                const session = await response.json();
+                selectSession(session);
+                newSessionName.value = '';
+                await loadSessions();
+            } catch (error) {
+                console.error('Error creating session:', error);
+                alert('Failed to create session');
+            }
+        };
+        
+        toggleSessionsBtn.onclick = () => {
+            const isVisible = sessionPanel.style.display !== 'none';
+            sessionPanel.style.display = isVisible ? 'none' : 'block';
+            toggleSessionsBtn.textContent = isVisible ? 'Show Sessions' : 'Hide Sessions';
+            
+            if (!isVisible) {
+                loadSessions();
+            }
+        };
+        
+        // Load saved session on page load
+        const savedSessionId = localStorage.getItem('currentSessionId');
+        const savedSessionName = localStorage.getItem('currentSessionName');
+        if (savedSessionId && savedSessionName) {
+            currentSessionId = savedSessionId;
+            currentSessionName = savedSessionName;
+            currentSessionNameSpan.textContent = savedSessionName;
+            currentSession.style.display = 'flex';
+            
+            // Update navigation session indicator
+            const navSession = document.getElementById('navSession');
+            if (navSession) {
+                const indicator = navSession.querySelector('.session-indicator');
+                const text = navSession.querySelector('.session-text');
+                indicator.classList.add('active');
+                text.textContent = savedSessionName;
+            }
+        }
+        
         startBtn.onclick = async () => {
+            if (!currentSessionId) {
+                alert('Please create or select a session first');
+                toggleSessionsBtn.click();
+                return;
+            }
+            
             try {
                 startBtn.disabled = true;
                 stopBtn.disabled = false;
@@ -365,6 +877,9 @@
                             const transcript = event.transcript || '';
                             if (transcript && transcript.trim()) {
                                 addTranscriptLine(transcript);
+                                
+                                // Use debounced function to send transcript
+                                sendTranscriptToServer(transcript);
                             }
                         } else if (event.type === 'input_audio_buffer.speech_started') {
                             console.log('Speech started');
@@ -437,11 +952,12 @@
             }
         };
         
-        function stopTranscription() {
+        async function stopTranscription() {
             startBtn.disabled = false;
             stopBtn.disabled = true;
             audioIndicator.classList.remove('active');
             
+            // First, stop the recording
             if (stream) {
                 stream.getTracks().forEach(track => track.stop());
                 stream = null;
@@ -454,7 +970,40 @@
             
             dc = null;
             
-            updateStatus('Transcription stopped', 'idle');
+            // Then flush any pending transcripts for immediate embedding
+            if (currentSessionId) {
+                const notification = showEmbeddingNotification('Processing transcripts...', 'processing');
+                
+                try {
+                    const response = await fetch(`/api/sessions/${currentSessionId}/flush`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.flushed) {
+                            console.log(`Flushed ${result.contentLength} chars for embedding`);
+                            notification.remove();
+                            showEmbeddingNotification(`Embedded ${result.contentLength} characters`, 'success');
+                            updateStatus('Transcription stopped', 'idle');
+                        } else {
+                            notification.remove();
+                            updateStatus('Transcription stopped', 'idle');
+                        }
+                    } else {
+                        console.error('Failed to flush session:', await response.text());
+                        notification.remove();
+                        updateStatus('Transcription stopped', 'idle');
+                    }
+                } catch (error) {
+                    console.error('Error flushing session:', error);
+                    if (notification) notification.remove();
+                    updateStatus('Transcription stopped', 'idle');
+                }
+            } else {
+                updateStatus('Transcription stopped', 'idle');
+            }
         }
         
         stopBtn.onclick = stopTranscription;
