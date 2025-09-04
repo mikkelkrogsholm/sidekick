@@ -379,10 +379,9 @@ function bindPTT(sessionId) {
       isAssistantResponding = false;
       log("\n[Interrupted]\n");
       
-      // Stop audio playback immediately
-      if (remoteAudio && remoteAudio.srcObject) {
-        remoteAudio.pause();
-        remoteAudio.currentTime = 0;
+      // Mute audio immediately (don't pause - it's a live stream)
+      if (remoteAudio) {
+        remoteAudio.muted = true;
       }
       
       // Don't return - continue to start recording
@@ -675,9 +674,9 @@ function onRealtimeMessage(e) {
         if (msg.delta) {
           if (!isAssistantResponding) {
             isAssistantResponding = true;
-            // Resume audio playback if it was paused (e.g., after interrupt)
-            if (remoteAudio && remoteAudio.paused) {
-              remoteAudio.play().catch(err => console.log("Audio play failed:", err));
+            // Unmute audio for new response
+            if (remoteAudio) {
+              remoteAudio.muted = false;
             }
           }
           currentResponseText += msg.delta;
@@ -702,9 +701,9 @@ function onRealtimeMessage(e) {
         if (msg.delta) {
           if (!isAssistantResponding) {
             isAssistantResponding = true;
-            // Resume audio playback if it was paused (e.g., after interrupt)
-            if (remoteAudio && remoteAudio.paused) {
-              remoteAudio.play().catch(err => console.log("Audio play failed:", err));
+            // Unmute audio for new response
+            if (remoteAudio) {
+              remoteAudio.muted = false;
             }
           }
           currentResponseText += msg.delta;
@@ -795,6 +794,11 @@ function onRealtimeMessage(e) {
         isAssistantResponding = false;
         currentResponseText = "";
         accumulatedAssistantText = "";
+        
+        // Ensure audio is unmuted for next response
+        if (remoteAudio) {
+          remoteAudio.muted = false;
+        }
         
         // Don't resume Secretary here as user is likely about to speak
         break;
