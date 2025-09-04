@@ -299,6 +299,9 @@ function disconnect() {
   $("#skConnectBtn").textContent = "Connect";
   status("Disconnected");
   
+  // Reset speech indicator
+  setSpeechIndicator(false);
+  
   // Resume Secretary if it was paused
   if (secretaryPaused && window.Secretary?.resume) {
     window.Secretary.resume();
@@ -482,6 +485,18 @@ function bindPTT(sessionId) {
 
 let currentResponseText = "";
 
+// Speech indicator control
+function setSpeechIndicator(speaking) {
+  const indicator = document.getElementById('sidekickSpeechIndicator');
+  if (indicator) {
+    if (speaking) {
+      indicator.classList.add('speaking');
+    } else {
+      indicator.classList.remove('speaking');
+    }
+  }
+}
+
 function onRealtimeMessage(e) {
   try {
     const msg = JSON.parse(e.data);
@@ -493,6 +508,8 @@ function onRealtimeMessage(e) {
         if (msg.delta) {
           currentResponseText += msg.delta;
           log(msg.delta);
+          // Show indicator for text responses too
+          setSpeechIndicator(true);
         }
         break;
         
@@ -513,6 +530,8 @@ function onRealtimeMessage(e) {
         if (msg.delta) {
           currentResponseText += msg.delta;
           log(msg.delta);
+          // Start speech indicator when first delta arrives
+          setSpeechIndicator(true);
         }
         break;
         
@@ -546,6 +565,9 @@ function onRealtimeMessage(e) {
             }
           });
         }
+        
+        // Stop speech indicator when response is done
+        setSpeechIndicator(false);
         
         // Record the complete conversation if enabled and we have both parts
         if (pendingUserUtterance && accumulatedAssistantText) {

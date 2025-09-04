@@ -615,3 +615,40 @@
 /* Align input + button rows nicely */
 #sidekickPanel .field .row { align-items: stretch; }
 #sidekickPanel .field .row .input { height: 40px; }
+
+/* Sidekick speech indicator */
+.sidekick-title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.speech-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+  opacity: 0.4;
+  transition: all 0.2s var(--ease);
+}
+
+.speech-indicator.speaking {
+  background: var(--color-accent-quiet, #6BAA75);
+  opacity: 1;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
