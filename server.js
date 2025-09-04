@@ -2,7 +2,14 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
-import db, { insertEmbedding, createSession, getSessions, getSession, updateSessionTranscriptCount, getSessionTranscripts, searchSimilar, deleteSession, deleteEmbedding, recalculateTranscriptCount } from "./db.js";
+import fs from "fs";
+import path from "path";
+import crypto from "crypto";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+import db, { insertEmbedding, createSession, getSessions, getSession, updateSessionTranscriptCount, getSessionTranscripts, searchSimilar, deleteSession, deleteEmbedding, recalculateTranscriptCount, saveAudioRecording, getAudioRecordingsForSession, deleteAudioRecording } from "./db.js";
 
 dotenv.config();
 
@@ -18,6 +25,17 @@ if (!process.env.OPENAI_API_KEY.startsWith('sk-')) {
 }
 
 const app = express();
+
+// Audio storage setup
+const AUDIO_STORAGE_PATH = process.env.AUDIO_STORAGE_PATH || "./data/audio";
+
+// Ensure audio storage directory exists
+try {
+  fs.mkdirSync(AUDIO_STORAGE_PATH, { recursive: true });
+  console.log("Audio storage directory initialized at:", AUDIO_STORAGE_PATH);
+} catch (err) {
+  console.error("Failed to create audio storage directory:", err);
+}
 
 // Simple rate limiter
 const rateLimitMap = new Map();
@@ -63,6 +81,7 @@ setInterval(() => {
 app.use(cors());
 app.use(express.static("public"));
 app.use(express.json({ limit: "1mb" }));
+app.use(express.raw({ type: 'audio/*', limit: '50mb' })); // Handle audio uploads
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const EMBED_MODEL = process.env.EMBEDDING_MODEL || "text-embedding-3-large";
@@ -622,6 +641,131 @@ app.get("/ephemeral-token", rateLimit, async (req, res) => {
   } catch (error) {
     console.error("Server error:", error);
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// Audio recording endpoints
+app.post("/api/audio/upload", rateLimit, async (req, res) => {
+  try {
+    // Accept binary audio data directly
+    
+    // Get parameters from query string as fallback
+    const { sessionId, audioType, startedAt, endedAt } = req.query;
+    
+    if (!sessionId || !audioType) {
+      return res.status(400).json({ error: 'Missing required parameters' });
+    }
+
+    // Validate session exists
+    const session = getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    // Generate unique filename
+    const recordingId = crypto.randomUUID();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const filename = `${audioType}_${timestamp}_${recordingId}.webm`;
+    const filePath = path.join(AUDIO_STORAGE_PATH, filename);
+
+    // Write audio data to file
+    const audioData = req.body;
+    fs.writeFileSync(filePath, audioData);
+
+    const fileStats = fs.statSync(filePath);
+    
+    // Save to database
+    const recording = saveAudioRecording({
+      id: recordingId,
+      sessionId,
+      transcriptRowid: null, // Will be linked later when transcript is available
+      audioType,
+      startedAt: startedAt || new Date().toISOString(),
+      endedAt: endedAt || new Date().toISOString(),
+      filePath: filename, // Store relative path
+      fileSize: fileStats.size,
+      durationMs: 0 // TODO: Calculate duration from audio file
+    });
+
+    console.log(`Audio recording saved: ${filename} (${fileStats.size} bytes)`);
+
+    res.json({
+      message: 'Audio recording saved successfully',
+      id: recording.id,
+      filename: filename,
+      size: fileStats.size
+    });
+
+  } catch (error) {
+    console.error('Error uploading audio:', error);
+    res.status(500).json({ error: 'Failed to upload audio recording' });
+  }
+});
+
+// Get audio recordings for a session
+app.get("/api/sessions/:id/audio", (req, res) => {
+  try {
+    const recordings = getAudioRecordingsForSession(req.params.id);
+    res.json(recordings);
+  } catch (error) {
+    console.error('Error fetching audio recordings:', error);
+    res.status(500).json({ error: 'Failed to fetch audio recordings' });
+  }
+});
+
+// Serve audio files
+app.get("/api/audio/:filename", (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filePath = path.join(AUDIO_STORAGE_PATH, filename);
+    
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({ error: 'Audio file not found' });
+    }
+
+    const stat = fs.statSync(filePath);
+    res.writeHead(200, {
+      'Content-Type': 'audio/webm',
+      'Content-Length': stat.size,
+      'Accept-Ranges': 'bytes'
+    });
+
+    const readStream = fs.createReadStream(filePath);
+    readStream.pipe(res);
+  } catch (error) {
+    console.error('Error serving audio file:', error);
+    res.status(500).json({ error: 'Failed to serve audio file' });
+  }
+});
+
+// Delete audio recording
+app.delete("/api/audio/:id", rateLimit, (req, res) => {
+  try {
+    const recordingId = req.params.id;
+    
+    // Get recording details first
+    const recording = db.prepare('select * from audio_recordings where id = ?').get(recordingId);
+    if (!recording) {
+      return res.status(404).json({ error: 'Audio recording not found' });
+    }
+
+    // Delete file
+    const filePath = path.join(AUDIO_STORAGE_PATH, recording.file_path);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    // Delete from database
+    const deleted = deleteAudioRecording(recordingId);
+    
+    if (deleted) {
+      res.json({ message: 'Audio recording deleted successfully' });
+    } else {
+      res.status(404).json({ error: 'Audio recording not found' });
+    }
+  } catch (error) {
+    console.error('Error deleting audio recording:', error);
+    res.status(500).json({ error: 'Failed to delete audio recording' });
   }
 });
 

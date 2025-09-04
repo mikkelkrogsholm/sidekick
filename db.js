@@ -51,6 +51,23 @@ try {
       updated_at text not null,
       total_transcripts integer default 0
     );
+    
+    create table if not exists audio_recordings (
+      id text primary key,
+      session_id text not null,
+      transcript_rowid integer,
+      audio_type text not null check(audio_type in ('user_speech', 'ai_response', 'conversation')),
+      started_at text not null,
+      ended_at text not null,
+      file_path text not null,
+      file_size integer default 0,
+      duration_ms integer default 0,
+      created_at text not null,
+      foreign key (session_id) references sessions(id) on delete cascade
+    );
+    
+    create index if not exists idx_audio_recordings_session on audio_recordings(session_id);
+    create index if not exists idx_audio_recordings_transcript on audio_recordings(transcript_rowid);
   `);
 } catch (err) {
   console.error("Error creating database tables:", err);
@@ -224,6 +241,43 @@ export function recalculateTranscriptCount(sessionId) {
     console.error("Error recalculating transcript count:", err);
     throw err;
   }
+}
+
+// Audio recording management functions
+export function saveAudioRecording({ id, sessionId, transcriptRowid, audioType, startedAt, endedAt, filePath, fileSize = 0, durationMs = 0 }) {
+  const now = new Date().toISOString();
+  const stmt = db.prepare(`
+    insert into audio_recordings (id, session_id, transcript_rowid, audio_type, started_at, ended_at, file_path, file_size, duration_ms, created_at)
+    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+  stmt.run(id, sessionId, transcriptRowid, audioType, startedAt, endedAt, filePath, fileSize, durationMs, now);
+  return { id, sessionId, transcriptRowid, audioType, startedAt, endedAt, filePath, fileSize, durationMs, created_at: now };
+}
+
+export function getAudioRecordingsForSession(sessionId) {
+  const stmt = db.prepare(`
+    select * from audio_recordings
+    where session_id = ?
+    order by started_at desc
+  `);
+  return stmt.all(sessionId);
+}
+
+export function getAudioRecordingsByTranscript(transcriptRowid) {
+  const stmt = db.prepare(`
+    select * from audio_recordings
+    where transcript_rowid = ?
+    order by started_at desc
+  `);
+  return stmt.all(transcriptRowid);
+}
+
+export function deleteAudioRecording(id) {
+  const stmt = db.prepare(`
+    delete from audio_recordings where id = ?
+  `);
+  const result = stmt.run(id);
+  return result.changes > 0;
 }
 
 export default db;

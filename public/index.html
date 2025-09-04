@@ -54,6 +54,13 @@
               </div>
             </div>
 
+            <div class="field" id="audioPlaybackSection" style="display: none;">
+              <label>Audio Recordings</label>
+              <div id="audioRecordings" class="audio-recordings-list">
+                <!-- Audio recordings will appear here -->
+              </div>
+            </div>
+
             <div class="field">
               <label for="languageSelect">Language</label>
               <select id="languageSelect" class="input">
@@ -154,6 +161,7 @@
       <section>
         <h4>Secretary</h4>
         <label><input type="checkbox" id="sec_show_timestamps"> Show timestamps</label>
+        <label><input type="checkbox" id="sec_record_audio"> Record audio</label>
       </section>
 
       <section>
@@ -184,6 +192,7 @@
     </aside>
 
     <script src="/settings.js"></script>
+    <script src="/audio-recorder.js"></script>
     <script src="/sidekick.js"></script>
     <script type="module">
         const startBtn = document.getElementById('startBtn');
@@ -412,6 +421,9 @@
             localStorage.setItem('currentSessionName', session.name);
             
             updateStatus(`Session selected: ${session.name}`, 'idle');
+            
+            // Load audio recordings for this session
+            loadAudioRecordings();
         }
         
         createSessionBtn.onclick = async () => {
@@ -476,6 +488,9 @@
                             indicator.classList.add('active');
                             text.textContent = savedSessionName;
                         }
+                        
+                        // Load audio recordings for restored session
+                        loadAudioRecordings();
                     } else if (response.status === 404) {
                         // Session was deleted, clear localStorage
                         console.log('Saved session no longer exists, clearing...');
@@ -581,6 +596,12 @@
                     pc.addTrack(track, stream);
                 });
                 
+                // Start audio recording for user speech if recording is enabled
+                const shouldRecordSecretary = window.Settings?.get('sec_record_audio', false) ?? false;
+                if (shouldRecordSecretary && currentSessionId && window.AudioRecorder) {
+                    window.AudioRecorder.startUserRecording(stream, currentSessionId);
+                }
+                
                 // Create offer
                 const offer = await pc.createOffer();
                 await pc.setLocalDescription(offer);
@@ -620,6 +641,11 @@
         async function stopTranscription() {
             startBtn.disabled = false;
             stopBtn.disabled = true;
+            
+            // Stop audio recording if active
+            if (window.AudioRecorder) {
+                window.AudioRecorder.stopRecording();
+            }
             
             // First, stop the recording
             if (stream) {
@@ -698,6 +724,76 @@
             }
         };
         
+        // Audio recordings management
+        async function loadAudioRecordings() {
+            if (!currentSessionId) return;
+            
+            try {
+                const response = await fetch(`/api/sessions/${currentSessionId}/audio`);
+                const recordings = await response.json();
+                
+                const audioSection = document.getElementById('audioPlaybackSection');
+                const audioContainer = document.getElementById('audioRecordings');
+                
+                if (recordings.length === 0) {
+                    audioSection.style.display = 'none';
+                    return;
+                }
+                
+                audioSection.style.display = 'block';
+                audioContainer.innerHTML = '';
+                
+                recordings.forEach(recording => {
+                    const item = document.createElement('div');
+                    item.className = 'audio-recording-item';
+                    
+                    const startTime = new Date(recording.started_at).toLocaleTimeString();
+                    const duration = recording.duration_ms ? `${Math.round(recording.duration_ms / 1000)}s` : 'Unknown';
+                    const typeLabel = recording.audio_type === 'user_speech' ? '🎤 You' : '🤖 Sidekick';
+                    const fileSize = recording.file_size ? `${Math.round(recording.file_size / 1024)}KB` : '';
+                    
+                    item.innerHTML = `
+                        <div class="audio-info">
+                            <span class="audio-type">${typeLabel}</span>
+                            <span class="audio-time">${startTime}</span>
+                            <span class="audio-duration">${duration}</span>
+                            <span class="audio-size">${fileSize}</span>
+                        </div>
+                        <audio controls preload="none">
+                            <source src="/api/audio/${recording.file_path}" type="audio/webm">
+                            Your browser does not support the audio element.
+                        </audio>
+                        <button class="button button--ghost button--small delete-audio" data-id="${recording.id}">Delete</button>
+                    `;
+                    
+                    audioContainer.appendChild(item);
+                });
+                
+                // Add delete handlers
+                audioContainer.querySelectorAll('.delete-audio').forEach(btn => {
+                    btn.onclick = async () => {
+                        const recordingId = btn.dataset.id;
+                        if (confirm('Delete this audio recording?')) {
+                            try {
+                                await fetch(`/api/audio/${recordingId}`, { method: 'DELETE' });
+                                loadAudioRecordings(); // Reload the list
+                            } catch (error) {
+                                console.error('Error deleting recording:', error);
+                            }
+                        }
+                    };
+                });
+                
+            } catch (error) {
+                console.error('Error loading audio recordings:', error);
+            }
+        }
+        
+        // Listen for new audio recordings
+        window.addEventListener('audioRecordingSaved', () => {
+            loadAudioRecordings();
+        });
+
         // Expose Secretary methods for Sidekick integration
         let isPaused = false;
         let wasRecording = false;

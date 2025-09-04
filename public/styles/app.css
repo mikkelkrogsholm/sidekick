@@ -615,3 +615,66 @@
 /* Align input + button rows nicely */
 #sidekickPanel .field .row { align-items: stretch; }
 #sidekickPanel .field .row .input { height: 40px; }
+
+/* ========== AUDIO RECORDINGS ========== */
+.audio-recordings-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.audio-recording-item {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-s);
+  background: var(--color-surface-alt);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.audio-info {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  font-size: var(--text-s);
+  color: var(--color-text-secondary);
+}
+
+.audio-type {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.audio-time {
+  color: var(--color-text-muted);
+}
+
+.audio-duration, .audio-size {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.audio-recording-item audio {
+  width: 100%;
+  margin: var(--space-2) 0;
+}
+
+.button--small {
+  font-size: var(--text-s);
+  padding: var(--space-1) var(--space-2);
+  height: auto;
+  min-height: 28px;
+}
+
+.delete-audio {
+  align-self: flex-start;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.delete-audio:hover {
+  background: var(--color-danger);
+  color: white;
+}

@@ -140,6 +140,20 @@ async function connectSidekick(selectedSessionId) {
       console.log("Received remote track:", e.track.kind);
       if (remoteAudio) {
         remoteAudio.srcObject = e.streams[0]; 
+        
+        // Start recording AI responses if enabled
+        const shouldRecordAI = window.Settings?.get('sk_record_conversations', false) ?? false;
+        if (shouldRecordAI && window.AudioRecorder) {
+          // Start recording when audio starts playing
+          remoteAudio.onplay = () => {
+            window.AudioRecorder.startAIRecording(remoteAudio, selectedSessionId);
+          };
+          
+          // Stop recording when audio ends
+          remoteAudio.onended = () => {
+            window.AudioRecorder.stopRecording();
+          };
+        }
       }
     };
     
@@ -362,6 +376,12 @@ function bindPTT(sessionId) {
       const micTrack = activeMicStream.getAudioTracks()[0];
       await audioSender.replaceTrack(micTrack);
       
+      // Start recording user speech if enabled
+      const shouldRecordUser = window.Settings?.get('sk_record_conversations', false) ?? false;
+      if (shouldRecordUser && window.AudioRecorder && sessionId) {
+        window.AudioRecorder.startUserRecording(activeMicStream, sessionId);
+      }
+      
       // Note: We don't need to send response.create here
       // The server VAD will detect speech and handle the conversation automatically
       
@@ -387,6 +407,11 @@ function bindPTT(sessionId) {
     btn.textContent = "Hold to talk";
     
     if (activeMicStream) {
+      // Stop user recording if active
+      if (window.AudioRecorder) {
+        window.AudioRecorder.stopRecording();
+      }
+      
       // Replace the microphone track with the idle track
       await audioSender.replaceTrack(idleTrack);
       
