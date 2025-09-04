@@ -107,22 +107,32 @@ const upload = multer({
   storage: storage,
   limits: { fileSize: MAX_UPLOAD_SIZE },
   fileFilter: function (req, file, cb) {
-    const allowedTypes = /\.(txt|md|pdf)$/i;
-    const allowedMimes = [
-      'text/plain',
-      'text/markdown',
-      'application/pdf'
-    ];
-
-    const extOk = allowedTypes.test(path.extname(file.originalname));
+    const ext = path.extname(file.originalname).toLowerCase();
+    const extOk = /\.(txt|md|pdf)$/.test(ext);
     if (!extOk) {
       return cb(new Error('Invalid file extension. Only TXT, MD, and PDF files are allowed.'));
     }
 
-    // Accept common fallback MIME types some browsers use (e.g., application/octet-stream)
-    const mimeOk = allowedMimes.includes(file.mimetype) || ['application/octet-stream','binary/octet-stream',''].includes(file.mimetype);
+    const mimeRaw = (file.mimetype || '').toLowerCase();
+    const mime = mimeRaw.split(';')[0].trim();
+    const isOctet = ['application/octet-stream', 'binary/octet-stream', ''].includes(mime);
+
+    let mimeOk = false;
+    if (ext === '.md' || ext === '.txt') {
+      const allowedTextMimes = [
+        'text/plain',
+        'text/markdown',
+        'text/x-markdown',
+        'application/markdown',
+        'application/x-markdown'
+      ];
+      mimeOk = allowedTextMimes.includes(mime) || isOctet || mime.startsWith('text/');
+    } else if (ext === '.pdf') {
+      mimeOk = mime === 'application/pdf' || isOctet;
+    }
+
     if (!mimeOk) {
-      return cb(new Error(`Invalid MIME type: ${file.mimetype || 'unknown'}.`));
+      return cb(new Error(`Invalid MIME type for ${ext} file: ${mime || 'unknown'}.`));
     }
 
     return cb(null, true);
