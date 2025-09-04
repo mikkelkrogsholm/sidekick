@@ -1,0 +1,65 @@
+/* Icon System - Scandinavian Minimalist Design */
+.icon {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  stroke: var(--color-text-secondary, #4D4D4D);
+  stroke-width: 1.5;
+  fill: none;
+  vertical-align: middle;
+}
+
+.icon--sm {
+  width: 14px;
+  height: 14px;
+}
+
+.icon--md {
+  width: 20px;
+  height: 20px;
+}
+
+.icon--lg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Status-specific colors */
+.icon--success {
+  stroke: var(--color-accent-2, #6BAA75);
+}
+
+.icon--warning {
+  stroke: var(--color-accent-4, #D9A982);
+}
+
+.icon--error {
+  stroke: #e74c3c;
+}
+
+.icon--info {
+  stroke: var(--color-accent-3, #A3B6D3);
+}
+
+.icon--primary {
+  stroke: var(--color-text-primary, #1A1A1A);
+}
+
+.icon--muted {
+  stroke: var(--color-text-muted, #7A7A7A);
+}
+
+/* Interactive states */
+.icon--interactive {
+  transition: stroke 0.2s ease;
+}
+
+.icon--interactive:hover {
+  stroke: var(--color-accent-1, #2D2D2D);
+}
+
+/* Console icons for server logs */
+.console-icon {
+  font-style: normal;
+  font-weight: normal;
+}

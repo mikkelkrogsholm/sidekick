@@ -3,18 +3,19 @@ import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
 import db, { insertEmbedding, createSession, getSessions, getSession, updateSessionTranscriptCount, getSessionTranscripts, searchSimilar, deleteSession, deleteEmbedding, recalculateTranscriptCount } from "./db.js";
+import { getIcon, formatMessage } from "./icons-console.js";
 
 dotenv.config();
 
 // Startup validation
 if (!process.env.OPENAI_API_KEY) {
-  console.error("❌ ERROR: OPENAI_API_KEY is not set in environment variables");
+  console.error(formatMessage('error', 'OPENAI_API_KEY is not set in environment variables'));
   console.error("Please create a .env file with your OpenAI API key");
   process.exit(1);
 }
 
 if (!process.env.OPENAI_API_KEY.startsWith('sk-')) {
-  console.error("⚠️  WARNING: OPENAI_API_KEY doesn't look valid (should start with 'sk-')");
+  console.error(formatMessage('warning', "OPENAI_API_KEY doesn't look valid (should start with 'sk-')"));
 }
 
 const app = express();
@@ -630,10 +631,10 @@ app.listen(PORT, () => {
   console.log("╔════════════════════════════════════════════════╗");
   console.log("║        Voice Transcription Server Started       ║");
   console.log("╠════════════════════════════════════════════════╣");
-  console.log(`║ 🌐 Server:    http://localhost:${PORT}${' '.repeat(18 - PORT.toString().length)}║`);
-  console.log(`║ 📊 Viewer:    http://localhost:${PORT}/viewer.html${' '.repeat(8 - PORT.toString().length)}║`);
-  console.log(`║ 💾 Database:  ${process.env.SQLITE_DB_PATH ? '✓ Custom path' : '✓ Default path'}              ║`);
-  console.log(`║ 🤖 AI Model:  ${EMBED_MODEL.substring(0, 20).padEnd(20)}         ║`);
-  console.log(`║ ⏱️  Interval:  ${INTERVAL_MIN} minutes                         ║`);
+  console.log(`║ ${getIcon('server')} Server:    http://localhost:${PORT}${' '.repeat(13 - PORT.toString().length)}║`);
+  console.log(`║ ${getIcon('viewer')} Viewer:    http://localhost:${PORT}/viewer.html${' '.repeat(3 - PORT.toString().length)}║`);
+  console.log(`║ ${getIcon('database')} Database:  ${process.env.SQLITE_DB_PATH ? '✓ Custom path' : '✓ Default path'}              ║`);
+  console.log(`║ ${getIcon('robot')} AI Model:  ${EMBED_MODEL.substring(0, 20).padEnd(20)}         ║`);
+  console.log(`║ ${getIcon('time')} Interval:  ${INTERVAL_MIN} minutes                         ║`);
   console.log("╚════════════════════════════════════════════════╝");
 });
