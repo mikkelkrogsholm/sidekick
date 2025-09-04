@@ -113,17 +113,32 @@ const upload = multer({
       'text/markdown',
       'application/pdf'
     ];
-    
+
     const extOk = allowedTypes.test(path.extname(file.originalname));
-    const mimeOk = allowedMimes.includes(file.mimetype);
-    
-    if (extOk && mimeOk) {
-      return cb(null, true);
-    } else {
-      return cb(new Error('Invalid file type. Only TXT, MD, and PDF files are allowed.'));
+    if (!extOk) {
+      return cb(new Error('Invalid file extension. Only TXT, MD, and PDF files are allowed.'));
     }
+
+    // Accept common fallback MIME types some browsers use (e.g., application/octet-stream)
+    const mimeOk = allowedMimes.includes(file.mimetype) || ['application/octet-stream','binary/octet-stream',''].includes(file.mimetype);
+    if (!mimeOk) {
+      return cb(new Error(`Invalid MIME type: ${file.mimetype || 'unknown'}.`));
+    }
+
+    return cb(null, true);
   }
 });
+
+// Wrap multer to return JSON on validation errors
+function uploadSingleMiddleware(req, res, next) {
+  upload.single('file')(req, res, function (err) {
+    if (err) {
+      const status = /file too large/i.test(err.message) ? 413 : 400;
+      return res.status(status).json({ error: err.message });
+    }
+    next();
+  });
+}
 
 // Text extraction functions
 async function extractTextFromFile(filePath, type) {
@@ -554,7 +569,7 @@ app.post("/api/sessions/:id/flush", rateLimit, async (req, res) => {
 // Knowledge management endpoints
 
 // Upload knowledge source
-app.post("/api/sessions/:id/knowledge", rateLimit, upload.single('file'), async (req, res) => {
+app.post("/api/sessions/:id/knowledge", rateLimit, uploadSingleMiddleware, async (req, res) => {
   const sessionId = req.params.id;
   
   try {
