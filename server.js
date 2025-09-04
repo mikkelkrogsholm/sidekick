@@ -2,7 +2,20 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import OpenAI from "openai";
-import db, { insertEmbedding, createSession, getSessions, getSession, updateSessionTranscriptCount, getSessionTranscripts, searchSimilar, deleteSession, deleteEmbedding, recalculateTranscriptCount } from "./db.js";
+import multer from "multer";
+import fs from "node:fs/promises";
+import fsSync from "node:fs";
+import path from "node:path";
+import crypto from "node:crypto";
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
+import db, { 
+  insertEmbedding, createSession, getSessions, getSession, 
+  updateSessionTranscriptCount, getSessionTranscripts, searchSimilar, 
+  deleteSession, deleteEmbedding, recalculateTranscriptCount,
+  createKnowledgeSource, getKnowledgeSources, getKnowledgeSource,
+  updateKnowledgeSourceStatus, deleteKnowledgeSource, insertKnowledgeChunk,
+  getKnowledgeChunks, getKnowledgeChunkCount, searchSimilarKnowledge
+} from "./db.js";
 import { getIcon, formatMessage } from "./icons-console.js";
 
 dotenv.config();
@@ -69,6 +82,177 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const EMBED_MODEL = process.env.EMBEDDING_MODEL || "text-embedding-3-large";
 const STRATEGY = (process.env.EMBED_STRATEGY || "minutely").toLowerCase();
 const INTERVAL_MIN = Number(process.env.EMBED_INTERVAL_MINUTES || 3);
+const MAX_UPLOAD_SIZE = parseInt(process.env.MAX_UPLOAD_SIZE || "10485760"); // 10MB default
+
+// Ensure uploads directory exists for knowledge files
+try {
+  fsSync.mkdirSync('./data/uploads', { recursive: true });
+} catch (e) {
+  console.error('Failed to ensure uploads directory exists', e);
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, './data/uploads/')
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname);
+    const id = crypto.randomUUID();
+    cb(null, `${id}${ext}`);
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  limits: { fileSize: MAX_UPLOAD_SIZE },
+  fileFilter: function (req, file, cb) {
+    const allowedTypes = /\.(txt|md|pdf)$/i;
+    const allowedMimes = [
+      'text/plain',
+      'text/markdown',
+      'application/pdf'
+    ];
+    
+    const extOk = allowedTypes.test(path.extname(file.originalname));
+    const mimeOk = allowedMimes.includes(file.mimetype);
+    
+    if (extOk && mimeOk) {
+      return cb(null, true);
+    } else {
+      return cb(new Error('Invalid file type. Only TXT, MD, and PDF files are allowed.'));
+    }
+  }
+});
+
+// Text extraction functions
+async function extractTextFromFile(filePath, type) {
+  try {
+    switch (type.toLowerCase()) {
+      case 'txt':
+      case 'md':
+        return await fs.readFile(filePath, 'utf-8');
+        
+      case 'pdf':
+        const pdfBuffer = await fs.readFile(filePath);
+        const pdfData = await pdfParse(pdfBuffer);
+        return pdfData.text;
+        
+      case 'docx':
+      case 'doc':
+        // For now, we'll skip DOCX support and add it later if needed
+        throw new Error('DOCX support coming soon');
+        
+      default:
+        throw new Error(`Unsupported file type: ${type}`);
+    }
+  } catch (error) {
+    console.error(`Error extracting text from ${filePath}:`, error);
+    throw error;
+  }
+}
+
+// Chunking function - token-aware splitting
+function chunkText(text, maxTokens = 1000, overlapTokens = 200) {
+  // Simple word-based approximation (1 token ≈ 0.75 words on average)
+  const wordsPerToken = 0.75;
+  const maxWords = Math.floor(maxTokens * wordsPerToken);
+  const overlapWords = Math.floor(overlapTokens * wordsPerToken);
+  
+  const words = text.split(/\s+/);
+  const chunks = [];
+  
+  for (let i = 0; i < words.length; i += (maxWords - overlapWords)) {
+    const chunk = words.slice(i, i + maxWords).join(' ');
+    if (chunk.trim()) {
+      chunks.push(chunk.trim());
+    }
+    
+    // Stop if we've reached the end
+    if (i + maxWords >= words.length) break;
+  }
+  
+  return chunks;
+}
+
+// Content hash function for deduplication
+function hashContent(content) {
+  return crypto.createHash('sha256').update(content.trim()).digest('hex');
+}
+
+// Process knowledge source - extract, chunk, embed
+async function processKnowledgeSource(sourceId) {
+  const source = getKnowledgeSource(sourceId);
+  if (!source) {
+    throw new Error('Knowledge source not found');
+  }
+  
+  try {
+    // Update status to processing
+    updateKnowledgeSourceStatus(sourceId, 'processing');
+    
+    // Extract text
+    const text = await extractTextFromFile(source.file_path, source.type);
+    
+    // Chunk the text
+    const chunks = chunkText(text);
+    
+    // Track metadata
+    const metadata = {
+      totalChunks: chunks.length,
+      fileSize: (await fs.stat(source.file_path)).size,
+      processedAt: new Date().toISOString()
+    };
+    
+    // Process each chunk
+    let processedChunks = 0;
+    const seenHashes = new Set();
+    
+    for (let i = 0; i < chunks.length; i++) {
+      const content = chunks[i];
+      const contentHash = hashContent(content);
+      
+      // Skip duplicate chunks within the same source
+      if (seenHashes.has(contentHash)) {
+        console.log(`Skipping duplicate chunk ${i} in source ${sourceId}`);
+        continue;
+      }
+      seenHashes.add(contentHash);
+      
+      // Generate embedding
+      const resp = await openai.embeddings.create({
+        model: EMBED_MODEL,
+        input: content
+      });
+      const embedding = resp.data[0].embedding;
+      
+      // Store chunk (ensure chunkIndex is an integer)
+      insertKnowledgeChunk({
+        sourceId,
+        sessionId: source.session_id,
+        chunkIndex: Math.floor(i),
+        content,
+        contentHash,
+        embedding
+      });
+      
+      processedChunks++;
+    }
+    
+    metadata.uniqueChunks = processedChunks;
+    
+    // Update status to ready
+    updateKnowledgeSourceStatus(sourceId, 'ready', null, metadata);
+    
+    console.log(`Successfully processed knowledge source ${sourceId}: ${processedChunks} unique chunks from ${chunks.length} total`);
+    
+    return { success: true, chunks: processedChunks };
+  } catch (error) {
+    console.error(`Error processing knowledge source ${sourceId}:`, error);
+    updateKnowledgeSourceStatus(sourceId, 'error', error.message);
+    throw error;
+  }
+}
 
 // --- transcript buffer (per session) ---
 /**
@@ -367,6 +551,178 @@ app.post("/api/sessions/:id/flush", rateLimit, async (req, res) => {
   }
 });
 
+// Knowledge management endpoints
+
+// Upload knowledge source
+app.post("/api/sessions/:id/knowledge", rateLimit, upload.single('file'), async (req, res) => {
+  const sessionId = req.params.id;
+  
+  try {
+    // Validate session exists
+    const session = getSession(sessionId);
+    if (!session) {
+      // Clean up uploaded file if session doesn't exist
+      if (req.file) {
+        await fs.unlink(req.file.path).catch(console.error);
+      }
+      return res.status(404).json({ error: "Session not found" });
+    }
+    
+    // Handle both file upload and text payload
+    let filePath, fileName, fileType;
+    
+    if (req.file) {
+      // File upload
+      filePath = req.file.path;
+      fileName = req.file.originalname;
+      fileType = path.extname(req.file.originalname).slice(1).toLowerCase();
+    } else if (req.body.content && req.body.filename) {
+      // Text payload (for MVP)
+      const ext = path.extname(req.body.filename).slice(1).toLowerCase();
+      if (!['txt', 'md'].includes(ext)) {
+        return res.status(400).json({ error: "Text payload only supports .txt and .md files" });
+      }
+      
+      const id = crypto.randomUUID();
+      filePath = path.join('./data/uploads/', `${id}.${ext}`);
+      await fs.writeFile(filePath, req.body.content, 'utf-8');
+      fileName = req.body.filename;
+      fileType = ext;
+    } else {
+      return res.status(400).json({ error: "No file or content provided" });
+    }
+    
+    // Create knowledge source record
+    const source = createKnowledgeSource({
+      sessionId,
+      name: fileName,
+      type: fileType,
+      filePath
+    });
+    
+    // Process asynchronously
+    processKnowledgeSource(source.id).catch(err => {
+      console.error(`Failed to process knowledge source ${source.id}:`, err);
+    });
+    
+    res.json({
+      sourceId: source.id,
+      status: source.status,
+      message: "Knowledge source uploaded and queued for processing"
+    });
+  } catch (error) {
+    console.error("Error uploading knowledge source:", error);
+    
+    // Clean up uploaded file on error
+    if (req.file) {
+      await fs.unlink(req.file.path).catch(console.error);
+    }
+    
+    res.status(500).json({ error: "Failed to upload knowledge source" });
+  }
+});
+
+// List knowledge sources for a session
+app.get("/api/sessions/:id/knowledge", rateLimit, (req, res) => {
+  const sessionId = req.params.id;
+  
+  try {
+    // Validate session exists
+    const session = getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+    
+    const sources = getKnowledgeSources(sessionId);
+    
+    // Add chunk counts to each source
+    const sourcesWithCounts = sources.map(source => {
+      const chunkCount = source.status === 'ready' ? getKnowledgeChunkCount(source.id) : 0;
+      return {
+        ...source,
+        chunkCount,
+        metadata: source.metadata_json ? JSON.parse(source.metadata_json) : null
+      };
+    });
+    
+    res.json(sourcesWithCounts);
+  } catch (error) {
+    console.error("Error fetching knowledge sources:", error);
+    res.status(500).json({ error: "Failed to fetch knowledge sources" });
+  }
+});
+
+// Get knowledge source details
+app.get("/api/sessions/:id/knowledge/:sourceId", rateLimit, (req, res) => {
+  const { id: sessionId, sourceId } = req.params;
+  
+  try {
+    // Validate session exists
+    const session = getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+    
+    const source = getKnowledgeSource(sourceId);
+    if (!source || source.session_id !== sessionId) {
+      return res.status(404).json({ error: "Knowledge source not found" });
+    }
+    
+    const chunkCount = source.status === 'ready' ? getKnowledgeChunkCount(source.id) : 0;
+    
+    res.json({
+      ...source,
+      chunkCount,
+      metadata: source.metadata_json ? JSON.parse(source.metadata_json) : null
+    });
+  } catch (error) {
+    console.error("Error fetching knowledge source:", error);
+    res.status(500).json({ error: "Failed to fetch knowledge source" });
+  }
+});
+
+// Delete knowledge source
+app.delete("/api/sessions/:id/knowledge/:sourceId", rateLimit, async (req, res) => {
+  const { id: sessionId, sourceId } = req.params;
+  
+  try {
+    // Validate session exists
+    const session = getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+    
+    // Get source before deletion
+    const source = getKnowledgeSource(sourceId);
+    if (!source || source.session_id !== sessionId) {
+      return res.status(404).json({ error: "Knowledge source not found" });
+    }
+    
+    // Delete from database
+    const result = deleteKnowledgeSource(sourceId);
+    
+    // Delete file from disk
+    try {
+      await fs.unlink(source.file_path);
+    } catch (err) {
+      console.error(`Failed to delete file ${source.file_path}:`, err);
+      // Continue even if file deletion fails
+    }
+    
+    console.log(`Deleted knowledge source ${sourceId}: ${result.chunksDeleted} chunks removed`);
+    
+    res.json({
+      message: "Knowledge source deleted successfully",
+      sourceId,
+      sourceName: source.name,
+      chunksDeleted: result.chunksDeleted
+    });
+  } catch (error) {
+    console.error("Error deleting knowledge source:", error);
+    res.status(500).json({ error: "Failed to delete knowledge source" });
+  }
+});
+
 // Health check endpoint
 app.get("/health", (req, res) => {
   try {
@@ -445,10 +801,17 @@ app.get("/api/embeddings", (req, res) => {
   }
 });
 
-// Search similar embeddings
+// Search similar embeddings with mixed retrieval support
 app.post("/api/search", rateLimit, async (req, res) => {
   try {
-    let { query, limit = 5, sessionId } = req.body;
+    let { 
+      query, 
+      limit = 5, 
+      sessionId,
+      include = 'both',  // 'transcripts' | 'knowledge' | 'both'
+      k_transcripts = null,  // optional separate limits
+      k_knowledge = null
+    } = req.body;
     
     if (!query || !query.trim()) {
       return res.status(400).json({ error: "Search query is required" });
@@ -459,8 +822,10 @@ app.post("/api/search", rateLimit, async (req, res) => {
       return res.status(400).json({ error: "Search query too long (max 1000 characters)" });
     }
     
-    // Cap limit to prevent DoS
+    // Cap limits to prevent DoS
     limit = Math.min(Math.max(1, limit), 100);
+    k_transcripts = k_transcripts ? Math.min(Math.max(1, k_transcripts), 50) : limit;
+    k_knowledge = k_knowledge ? Math.min(Math.max(1, k_knowledge), 50) : limit;
     
     // Generate embedding for search query
     const resp = await openai.embeddings.create({
@@ -469,9 +834,46 @@ app.post("/api/search", rateLimit, async (req, res) => {
     });
     const queryEmbedding = resp.data[0].embedding;
     
-    // Search for similar embeddings
-    const results = searchSimilar(queryEmbedding, limit, sessionId);
-    res.json({ results });
+    let results = [];
+    
+    // Search transcripts if requested
+    if (include === 'transcripts' || include === 'both') {
+      const transcriptResults = searchSimilar(queryEmbedding, k_transcripts, sessionId);
+      results = results.concat(transcriptResults.map(r => ({
+        ...r,
+        source: 'transcript',
+        attribution: null
+      })));
+    }
+    
+    // Search knowledge if requested
+    if (include === 'knowledge' || include === 'both') {
+      const knowledgeResults = searchSimilarKnowledge(queryEmbedding, k_knowledge, sessionId);
+      results = results.concat(knowledgeResults.map(r => ({
+        ...r,
+        source: 'knowledge',
+        attribution: {
+          sourceName: r.source_name,
+          sourceType: r.source_type,
+          chunkIndex: r.chunk_index
+        }
+      })));
+    }
+    
+    // Sort by distance (lower is better)
+    results.sort((a, b) => a.distance - b.distance);
+    
+    // Limit total results if both sources included
+    if (include === 'both' && !k_transcripts && !k_knowledge) {
+      results = results.slice(0, limit);
+    }
+    
+    res.json({ 
+      results,
+      query,
+      include,
+      totalResults: results.length
+    });
   } catch (error) {
     console.error("Search error:", error);
     res.status(500).json({ error: "Search failed" });
@@ -631,8 +1033,8 @@ app.listen(PORT, () => {
   console.log("╔════════════════════════════════════════════════╗");
   console.log("║        Voice Transcription Server Started       ║");
   console.log("╠════════════════════════════════════════════════╣");
-  console.log(`║ ${getIcon('server')} Server:    http://localhost:${PORT}${' '.repeat(13 - PORT.toString().length)}║`);
-  console.log(`║ ${getIcon('viewer')} Viewer:    http://localhost:${PORT}/viewer.html${' '.repeat(3 - PORT.toString().length)}║`);
+  console.log(`║ ${getIcon('server')} Server:    http://localhost:${PORT}${' '.repeat(Math.max(0, 13 - PORT.toString().length))}║`);
+  console.log(`║ ${getIcon('viewer')} Viewer:    http://localhost:${PORT}/viewer.html${' '.repeat(Math.max(0, 3 - PORT.toString().length))}║`);
   console.log(`║ ${getIcon('database')} Database:  ${process.env.SQLITE_DB_PATH ? 'OK Custom path' : 'OK Default path'}            ║`);
   console.log(`║ ${getIcon('robot')} AI Model:  ${EMBED_MODEL.substring(0, 20).padEnd(20)}         ║`);
   console.log(`║ ${getIcon('time')} Interval:  ${INTERVAL_MIN} minutes                         ║`);
