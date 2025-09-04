@@ -379,12 +379,14 @@ function bindPTT(sessionId) {
       isAssistantResponding = false;
       log("\n[Interrupted]\n");
       
-      // Resume Secretary if it was paused
-      if (secretaryPaused && window.Secretary?.resume) {
-        window.Secretary.resume();
-        secretaryPaused = false;
+      // Stop audio playback immediately
+      if (remoteAudio && remoteAudio.srcObject) {
+        remoteAudio.pause();
+        remoteAudio.currentTime = 0;
       }
-      return;
+      
+      // Don't return - continue to start recording
+      // This allows interrupting and immediately starting a new recording
     }
     
     if (isRecording) return;
@@ -778,6 +780,15 @@ function onRealtimeMessage(e) {
           window.Secretary.resume();
           secretaryPaused = false;
         }
+        break;
+        
+      case "response.cancelled":
+        // Response was cancelled
+        isAssistantResponding = false;
+        currentResponseText = "";
+        accumulatedAssistantText = "";
+        
+        // Don't resume Secretary here as user is likely about to speak
         break;
         
       case "error":
