@@ -10,6 +10,7 @@ let activeSessionId = null;
 let pendingUserUtterance = "";
 let accumulatedAssistantText = "";
 let isAssistantResponding = false;
+let basePrompt = "You are Sidekick.";
 
 async function fetchJSON(url, init) { 
   const r = await fetch(url, init); 
@@ -182,13 +183,13 @@ async function connectSidekick(selectedSessionId) {
       activeSessionId = selectedSessionId;
       
       // Send initial session configuration with instructions
-      const prompt = window.Settings?.get("sk_prompt", "You are Sidekick.") ?? "You are Sidekick.";
+      basePrompt = window.Settings?.get("sk_prompt", "You are Sidekick.") ?? "You are Sidekick.";
       const temp = window.Settings?.get("sk_temp", 0.6) ?? 0.6;
       
       sendEvent({
         type: "session.update",
         session: {
-          instructions: prompt + (context ? "\n\nContext:\n" + context : ""),
+          instructions: basePrompt + (context ? "\n\nContext:\n" + context : ""),
           temperature: temp,
           voice: window.Settings?.get("sk_voice", "marin") ?? "marin",
           turn_detection: {
@@ -196,7 +197,7 @@ async function connectSidekick(selectedSessionId) {
             threshold: 0.5,
             prefix_padding_ms: 300,
             silence_duration_ms: 500,
-            create_response: true
+            create_response: false
           }
         }
       });
@@ -318,6 +319,41 @@ function sendEvent(obj) {
 function buildContext(latest, hits) {
   const bullets = hits.slice(0, 6).map((h, i) => `${i + 1}. ${h.content}`).join("\n");
   return `Latest note: ${latest}\n\nRelated notes:\n${bullets || "(none)"}`;
+}
+
+async function buildRagContextFromQuery(question, sessionId) {
+  if (!question?.trim() || !sessionId) return "";
+  try {
+    const result = await postJSON(`/api/search`, { 
+      query: question, 
+      limit: 6, 
+      sessionId,
+      include: 'both',
+      k_transcripts: 3,
+      k_knowledge: 3
+    });
+    const hits = result?.results || [];
+    if (!hits.length) return "";
+    const lines = hits.map((h, i) => {
+      const src = h.source === 'knowledge' ? `(knowledge: ${h.attribution?.sourceName ?? 'source'} #${h.attribution?.chunkIndex ?? '?'})` : '(transcript)';
+      return `${i + 1}. ${h.content} ${src}`;
+    }).join('\n');
+    return `User question: ${question}\n\nRelevant material:\n${lines}`;
+  } catch (e) {
+    console.error('RAG context error:', e);
+    return "";
+  }
+}
+
+async function updateInstructionsWithContext(contextText) {
+  const temp = window.Settings?.get("sk_temp", 0.6) ?? 0.6;
+  sendEvent({
+    type: "session.update",
+    session: {
+      instructions: basePrompt + (contextText ? `\n\nContext:\n${contextText}` : ""),
+      temperature: temp
+    }
+  });
 }
 
 // Push-to-talk handlers
@@ -443,27 +479,33 @@ function bindPTT(sessionId) {
       secretaryPaused = true;
     }
     
-    // Send the text as a conversation item
-    sendEvent({
-      type: "conversation.item.create",
-      item: {
-        type: "message",
-        role: "user",
-        content: [{
-          type: "input_text",
-          text: text
-        }]
-      }
-    });
-    
-    // Then request a response
-    const temp = window.Settings?.get("sk_temp", 0.6) ?? 0.6;
-    sendEvent({ 
-      type: "response.create",
-      response: {
-        temperature: temp
-      }
-    });
+    // Build dynamic RAG context for this question and update session instructions
+    (async () => {
+      const ctx = await buildRagContextFromQuery(text, sessionId);
+      if (ctx) await updateInstructionsWithContext(ctx);
+
+      // Send the text as a conversation item
+      sendEvent({
+        type: "conversation.item.create",
+        item: {
+          type: "message",
+          role: "user",
+          content: [{
+            type: "input_text",
+            text: text
+          }]
+        }
+      });
+
+      // Then request a response
+      const temp = window.Settings?.get("sk_temp", 0.6) ?? 0.6;
+      sendEvent({ 
+        type: "response.create",
+        response: {
+          temperature: temp
+        }
+      });
+    })();
   };
   
   if (sendBtn) {
@@ -530,6 +572,19 @@ function onRealtimeMessage(e) {
         if (msg.transcript) {
           log(`\nYou: ${msg.transcript}\n`);
           pendingUserUtterance = msg.transcript;
+
+          // Build RAG context for the spoken question and update instructions, then request a response
+          (async () => {
+            const ctx = await buildRagContextFromQuery(msg.transcript, activeSessionId);
+            if (ctx) await updateInstructionsWithContext(ctx);
+            const temp = window.Settings?.get("sk_temp", 0.6) ?? 0.6;
+            sendEvent({ 
+              type: "response.create",
+              response: {
+                temperature: temp
+              }
+            });
+          })();
         }
         break;
         
@@ -556,6 +611,9 @@ function onRealtimeMessage(e) {
         pendingUserUtterance = "";
         accumulatedAssistantText = "";
         currentResponseText = "";
+
+        // Restore base instructions (remove transient context) for next turn
+        updateInstructionsWithContext("");
         
         // Resume Secretary after response is complete
         if (secretaryPaused && window.Secretary?.resume) {
