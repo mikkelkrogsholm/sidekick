@@ -37,85 +37,145 @@
             </div>
         </header>
 
-        <main class="index">
-            <div class="container index__layout">
-
-                <!-- Left: transcript + controls -->
-                <section class="stack" aria-label="Transcription">
-                    <div class="card" style="padding: 24px;">
-                        <h2>Transcript</h2>
-                        <div id="transcript" aria-live="polite" aria-atomic="false">
-                            <div class="placeholder">Click "Start" and begin speaking...</div>
-                        </div>
-                    </div>
-
-                    <div class="controls card">
-                        <div class="field">
-                            <label for="languageSelect">Language</label>
-                            <select id="languageSelect">
-                                <option value="en">English</option>
-                                <option value="da">Danish (Dansk)</option>
-                                <option value="es">Spanish (Español)</option>
-                                <option value="fr">French (Français)</option>
-                                <option value="de">German (Deutsch)</option>
-                                <option value="it">Italian (Italiano)</option>
-                                <option value="pt">Portuguese (Português)</option>
-                                <option value="nl">Dutch (Nederlands)</option>
-                                <option value="sv">Swedish (Svenska)</option>
-                                <option value="no">Norwegian (Norsk)</option>
-                                <option value="fi">Finnish (Suomi)</option>
-                                <option value="ja">Japanese (日本語)</option>
-                                <option value="ko">Korean (한국어)</option>
-                                <option value="zh">Chinese (中文)</option>
-                            </select>
-                        </div>
-
-                        <div class="field">
-                            <label for="audioIndicator">Input level</label>
-                            <div id="audioIndicator" aria-hidden="true"></div>
-                        </div>
-
-                        <div class="buttons">
-                            <button id="startBtn" class="button button--primary">Start</button>
-                            <button id="stopBtn" class="button button--danger">Stop</button>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- Right: sessions -->
-                <aside aria-label="Sessions">
-                    <div class="session-section">
-                        <div class="session-header">
-                            <div class="session-title">Session Management</div>
-                            <button id="toggleSessionsBtn" class="button">Show Sessions</button>
-                        </div>
-                        
-                        <div id="currentSession" class="current-session-display" style="display: none;">
-                            <div class="session-indicator"></div>
-                            <div>
-                                <strong>Current Session:</strong> <span id="currentSessionName">None</span>
-                            </div>
-                        </div>
-                        
-                        <div id="sessionPanel" style="display: none;">
-                            <div class="new-session-input">
-                                <input id="newSessionName" class="input" type="text" placeholder="Enter session name..." />
-                                <button id="createSessionBtn" class="button">Create New</button>
-                            </div>
-                            
-                            <div id="sessionList">
-                                <!-- Sessions will be loaded here -->
-                            </div>
-                        </div>
-                    </div>
-                </aside>
-
+        <main class="container grid-2col">
+          
+          <section id="secretaryPanel" class="card">
+            <div class="row between">
+              <h2>Secretary</h2>
+              <div>
+                <button id="toggleSessionsBtn" class="button">Sessions</button>
+              </div>
             </div>
+
+            <div class="field">
+              <label>Transcript</label>
+              <div id="transcript" aria-live="polite" aria-atomic="false">
+                <div class="placeholder">Click "Start" and begin speaking...</div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="languageSelect">Language</label>
+              <select id="languageSelect" class="input">
+                <option value="en">English</option>
+                <option value="da">Danish (Dansk)</option>
+                <option value="es">Spanish (Español)</option>
+                <option value="fr">French (Français)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="it">Italian (Italiano)</option>
+                <option value="pt">Portuguese (Português)</option>
+                <option value="nl">Dutch (Nederlands)</option>
+                <option value="sv">Swedish (Svenska)</option>
+                <option value="no">Norwegian (Norsk)</option>
+                <option value="fi">Finnish (Suomi)</option>
+                <option value="ja">Japanese (日本語)</option>
+                <option value="ko">Korean (한국어)</option>
+                <option value="zh">Chinese (中文)</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="audioIndicator">Input level</label>
+              <div id="audioIndicator" aria-hidden="true"></div>
+            </div>
+
+            <div class="row">
+              <button id="startBtn" class="button button--primary">Start</button>
+              <button id="stopBtn" class="button button--danger">Stop</button>
+            </div>
+
+            <!-- Session Management Panel (collapsible) -->
+            <div id="currentSession" class="current-session-display" style="display: none;">
+              <div class="session-indicator"></div>
+              <div>
+                <strong>Current Session:</strong> <span id="currentSessionName">None</span>
+              </div>
+            </div>
+            
+            <div id="sessionPanel" style="display: none;">
+              <div class="new-session-input">
+                <input id="newSessionName" class="input" type="text" placeholder="Enter session name..." />
+                <button id="createSessionBtn" class="button">Create New</button>
+              </div>
+              
+              <div id="sessionList">
+                <!-- Sessions will be loaded here -->
+              </div>
+            </div>
+          </section>
+
+          
+          <section id="sidekickPanel" class="card">
+            <div class="row between">
+              <h2>Sidekick</h2>
+              <div>
+                <button id="skSettingsBtn" class="button">⚙️ Settings</button>
+                <button id="skConnectBtn" class="button button--primary">Connect</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Ask (text)</label>
+              <div class="row">
+                <input id="skText" class="input">
+                <button id="skSend" class="button">Send</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Push-to-talk</label>
+              <button id="skPTT" class="button">Hold to talk</button>
+              <small class="muted" id="skStatus"></small>
+            </div>
+
+            <audio id="skAudio" autoplay></audio>
+            <pre id="skOutput" class="mono small"></pre>
+          </section>
         </main>
     </div>
 
     <div id="audioIndicator" style="display: none;"></div>
 
+    <aside id="settingsDrawer" class="drawer hidden">
+      <header class="drawer__header">
+        <h3>Settings</h3>
+        <button id="closeSettings" class="button">Close</button>
+      </header>
+
+      <section>
+        <h4>Secretary</h4>
+        <label><input type="checkbox" id="sec_show_timestamps"> Show timestamps</label>
+      </section>
+
+      <section>
+        <h4>Sidekick</h4>
+        <label>System prompt</label>
+        <textarea id="sk_prompt" rows="6"></textarea>
+
+        <label>Model
+          <select id="sk_model">
+            <option value="gpt-realtime">gpt-realtime</option>
+            <option value="gpt-4o-realtime-preview-2024-12-17">gpt-4o-realtime-preview-2024-12-17</option>
+          </select>
+        </label>
+
+        <label>Voice
+          <select id="sk_voice">
+            <option>marin</option>
+            <option>verse</option>
+            <option>alloy</option>
+          </select>
+        </label>
+
+        <label><input type="checkbox" id="sk_use_notes" checked> Use latest notes on start</label>
+        <label><input type="checkbox" id="sk_autopause" checked> Auto-pause Secretary while Sidekick talks</label>
+
+        <label>Temperature <input id="sk_temp" type="range" min="0.1" max="1.0" step="0.1" value="0.6"></label>
+      </section>
+    </aside>
+
+    <script src="/settings.js"></script>
+    <script src="/sidekick.js"></script>
     <script type="module">
         const startBtn = document.getElementById('startBtn');
         const stopBtn = document.getElementById('stopBtn');
@@ -589,6 +649,21 @@
                 line.style.color = '#667eea';
                 line.textContent = `[Language switched to ${languageSelect.options[languageSelect.selectedIndex].text}]`;
                 transcript.appendChild(line);
+            }
+        };
+        
+        // Expose Secretary methods for Sidekick integration
+        window.Secretary = {
+            pause() { 
+                // Temporarily disable the data channel to pause ingestion
+                if (dc && dc.readyState === 'open') {
+                    dc.close();
+                }
+            },
+            resume() { 
+                // Note: In a real implementation, we'd need to recreate the connection
+                // For now, this is a placeholder that would need proper WebRTC reconnection logic
+                console.log('Secretary resume requested - would need to reconnect WebRTC');
             }
         };
         

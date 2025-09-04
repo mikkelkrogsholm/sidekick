@@ -369,3 +369,149 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* ========== SIDEKICK TWO-PANEL LAYOUT ========== */
+.grid-2col { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+@media (max-width: 920px) { 
+  .grid-2col { 
+    grid-template-columns: 1fr; 
+  } 
+}
+
+/* Settings drawer */
+.drawer { 
+  position: fixed; 
+  right: 0; 
+  top: 0; 
+  bottom: 0; 
+  width: 380px; 
+  background: var(--color-surface); 
+  box-shadow: -2px 0 20px rgba(0,0,0,.15); 
+  padding: var(--space-md); 
+  overflow: auto; 
+  z-index: 50;
+}
+.drawer.hidden { 
+  display: none; 
+}
+
+.drawer__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-sm);
+  margin-bottom: var(--space-md);
+}
+
+.drawer section {
+  margin-bottom: var(--space-md);
+}
+
+.drawer h4 {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  margin-bottom: var(--space-sm);
+}
+
+.drawer label {
+  display: block;
+  margin-bottom: var(--space-sm);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.drawer textarea,
+.drawer select,
+.drawer input[type="range"] {
+  width: 100%;
+  margin-top: var(--space-xs);
+}
+
+.drawer textarea {
+  font-family: ui-monospace, Monaco, 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace;
+  font-size: var(--text-s);
+  resize: vertical;
+}
+
+/* Sidekick panel specific styles */
+#sidekickPanel pre {
+  background: var(--color-bg);
+  padding: var(--space-sm);
+  border-radius: var(--radius-s);
+  border: 1px solid var(--color-border);
+  max-height: 300px;
+  overflow-y: auto;
+  font-size: var(--text-s);
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+#sidekickPanel .muted {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+#sidekickPanel .mono {
+  font-family: ui-monospace, Monaco, 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace;
+}
+
+#sidekickPanel .small {
+  font-size: var(--text-s);
+}
+
+/* Button states for PTT */
+#skPTT:active {
+  background: var(--color-accent);
+  color: white;
+}
+
+/* Utility classes */
+.row {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+.row.between {
+  justify-content: space-between;
+}
+
+.field {
+  margin-bottom: var(--space-md);
+}
+
+.field label {
+  display: block;
+  margin-bottom: var(--space-xs);
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+/* Secretary panel transcript area */
+#secretaryPanel #transcript {
+  min-height: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-s);
+  font-family: ui-monospace, Monaco, 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace;
+  font-size: var(--text-s);
+}
+
+/* Card styling for both panels */
+#secretaryPanel,
+#sidekickPanel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-md);
+  box-shadow: var(--shadow-sm);
+}
