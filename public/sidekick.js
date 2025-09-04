@@ -11,6 +11,9 @@ let pendingUserUtterance = "";
 let accumulatedAssistantText = "";
 let isAssistantResponding = false;
 let basePrompt = "You are Sidekick.";
+let isRecording = false;
+let shouldSendResponse = false;
+let accumulatedTranscript = "";
 
 async function fetchJSON(url, init) { 
   const r = await fetch(url, init); 
@@ -364,14 +367,33 @@ function bindPTT(sessionId) {
   
   if (!btn) return;
   
-  let isRecording = false;
+  let toggleMode = false;
   
   const startRecording = async (e) => {
     if (e) e.preventDefault();
-    if (!isConnected || isRecording) return;
+    if (!isConnected) return;
+    
+    // Check if we should interrupt the assistant
+    if (isAssistantResponding) {
+      sendEvent({ type: "response.cancel" });
+      isAssistantResponding = false;
+      log("\n[Interrupted]\n");
+      
+      // Mute audio immediately (don't pause - it's a live stream)
+      if (remoteAudio) {
+        remoteAudio.muted = true;
+      }
+      
+      // Don't return - continue to start recording
+      // This allows interrupting and immediately starting a new recording
+    }
+    
+    if (isRecording) return;
     
     try {
       isRecording = true;
+      shouldSendResponse = false;
+      accumulatedTranscript = "";
       btn.style.background = "var(--color-accent)";
       btn.style.color = "white";
       btn.textContent = "Recording...";
@@ -418,9 +440,12 @@ function bindPTT(sessionId) {
     if (!isRecording) return;
     
     isRecording = false;
+    shouldSendResponse = true;
+    
+    const pttMode = window.Settings?.get('sk_ptt_mode', 'hold') ?? 'hold';
     btn.style.background = "";
     btn.style.color = "";
-    btn.textContent = "Hold to talk";
+    btn.textContent = pttMode === 'toggle' ? "Click to talk" : "Hold to talk";
     
     if (activeMicStream) {
       // Replace the microphone track with the idle track
@@ -432,32 +457,146 @@ function bindPTT(sessionId) {
       log("[Processing...]\n");
     }
     
+    // Send response if we have accumulated transcript
+    if (shouldSendResponse && accumulatedTranscript) {
+      pendingUserUtterance = accumulatedTranscript;
+      
+      // Build RAG context and send response
+      (async () => {
+        const ctx = await buildRagContextFromQuery(accumulatedTranscript, activeSessionId);
+        if (ctx) await updateInstructionsWithContext(ctx);
+        const temp = window.Settings?.get("sk_temp", 0.6) ?? 0.6;
+        sendEvent({ 
+          type: "response.create",
+          response: {
+            temperature: temp
+          }
+        });
+      })();
+      
+      accumulatedTranscript = "";
+    }
+    
     // Note: Secretary resume is now handled in response.done to prevent audio leakage
   };
   
-  // Mouse events
-  btn.onmousedown = startRecording;
-  btn.onmouseup = stopRecording;
-  btn.onmouseleave = stopRecording;
-  
-  // Touch events
-  btn.ontouchstart = startRecording;
-  btn.ontouchend = stopRecording;
-  
-  // Keyboard support (Space bar)
-  btn.onkeydown = (e) => {
-    if (e.key === ' ' && !isRecording) {
-      e.preventDefault();
-      startRecording();
+  // Setup PTT based on mode
+  const setupPTTHandlers = () => {
+    const pttMode = window.Settings?.get('sk_ptt_mode', 'hold') ?? 'hold';
+    btn.textContent = pttMode === 'toggle' ? "Click to talk" : "Hold to talk";
+    toggleMode = pttMode === 'toggle';
+    
+    // Clear existing handlers
+    btn.onmousedown = null;
+    btn.onmouseup = null;
+    btn.ontouchstart = null;
+    btn.ontouchend = null;
+    btn.onclick = null;
+    btn.onkeydown = null;
+    btn.onkeyup = null;
+    
+    if (toggleMode) {
+      // Toggle mode: click to start/stop
+      btn.onclick = (e) => {
+        e.preventDefault();
+        if (isRecording) {
+          stopRecording(e);
+        } else {
+          startRecording(e);
+        }
+      };
+      
+      // Keyboard support for toggle mode
+      btn.onkeydown = (e) => {
+        if (e.key === ' ') {
+          e.preventDefault();
+          btn.click();
+        }
+      };
+    } else {
+      // Hold mode with pointer capture
+      let pointerCaptured = false;
+      
+      const handlePointerDown = async (e) => {
+        e.preventDefault();
+        
+        // Capture the pointer to track release even outside the button
+        if (e.pointerId !== undefined && btn.setPointerCapture) {
+          try {
+            btn.setPointerCapture(e.pointerId);
+            pointerCaptured = true;
+          } catch (err) {
+            console.log("Pointer capture not supported, using fallback");
+          }
+        }
+        
+        await startRecording(e);
+      };
+      
+      const handlePointerUp = async (e) => {
+        e.preventDefault();
+        
+        // Release pointer capture
+        if (pointerCaptured && e.pointerId !== undefined && btn.releasePointerCapture) {
+          try {
+            btn.releasePointerCapture(e.pointerId);
+            pointerCaptured = false;
+          } catch (err) {
+            // Ignore
+          }
+        }
+        
+        await stopRecording(e);
+      };
+      
+      // Use pointer events for better tracking
+      btn.onpointerdown = handlePointerDown;
+      btn.onpointerup = handlePointerUp;
+      
+      // Also add global document listener as fallback
+      document.addEventListener('pointerup', (e) => {
+        if (isRecording && !toggleMode) {
+          handlePointerUp(e);
+        }
+      });
+      
+      // Touch events fallback
+      btn.ontouchstart = (e) => {
+        e.preventDefault();
+        startRecording(e);
+      };
+      
+      btn.ontouchend = (e) => {
+        e.preventDefault();
+        stopRecording(e);
+      };
+      
+      // Keyboard support for hold mode
+      btn.onkeydown = (e) => {
+        if (e.key === ' ' && !isRecording) {
+          e.preventDefault();
+          startRecording();
+        }
+      };
+      
+      btn.onkeyup = (e) => {
+        if (e.key === ' ') {
+          e.preventDefault();
+          stopRecording();
+        }
+      };
     }
   };
   
-  btn.onkeyup = (e) => {
-    if (e.key === ' ') {
-      e.preventDefault();
-      stopRecording();
+  // Initial setup
+  setupPTTHandlers();
+  
+  // Listen for settings changes
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'sk_ptt_mode') {
+      setupPTTHandlers();
     }
-  };
+  });
 
   // Text input handler
   const sendText = () => {
@@ -533,6 +672,13 @@ function onRealtimeMessage(e) {
       case "response.text.delta":
         // Text delta update
         if (msg.delta) {
+          if (!isAssistantResponding) {
+            isAssistantResponding = true;
+            // Unmute audio for new response
+            if (remoteAudio) {
+              remoteAudio.muted = false;
+            }
+          }
           currentResponseText += msg.delta;
           log(msg.delta);
         }
@@ -553,6 +699,13 @@ function onRealtimeMessage(e) {
       case "response.audio_transcript.delta":
         // Transcript of what the model is saying
         if (msg.delta) {
+          if (!isAssistantResponding) {
+            isAssistantResponding = true;
+            // Unmute audio for new response
+            if (remoteAudio) {
+              remoteAudio.muted = false;
+            }
+          }
           currentResponseText += msg.delta;
           log(msg.delta);
         }
@@ -570,26 +723,39 @@ function onRealtimeMessage(e) {
       case "conversation.item.input_audio_transcription.completed":
         // User's speech was transcribed
         if (msg.transcript) {
-          log(`\nYou: ${msg.transcript}\n`);
-          pendingUserUtterance = msg.transcript;
+          // Accumulate transcript while recording
+          if (isRecording) {
+            if (accumulatedTranscript) {
+              accumulatedTranscript += " " + msg.transcript;
+            } else {
+              accumulatedTranscript = msg.transcript;
+            }
+            log(`\nYou: ${msg.transcript}\n`);
+          } else {
+            // If not recording (shouldn't happen), send response immediately
+            log(`\nYou: ${msg.transcript}\n`);
+            pendingUserUtterance = msg.transcript;
 
-          // Build RAG context for the spoken question and update instructions, then request a response
-          (async () => {
-            const ctx = await buildRagContextFromQuery(msg.transcript, activeSessionId);
-            if (ctx) await updateInstructionsWithContext(ctx);
-            const temp = window.Settings?.get("sk_temp", 0.6) ?? 0.6;
-            sendEvent({ 
-              type: "response.create",
-              response: {
-                temperature: temp
-              }
-            });
-          })();
+            // Build RAG context for the spoken question and update instructions, then request a response
+            (async () => {
+              const ctx = await buildRagContextFromQuery(msg.transcript, activeSessionId);
+              if (ctx) await updateInstructionsWithContext(ctx);
+              const temp = window.Settings?.get("sk_temp", 0.6) ?? 0.6;
+              sendEvent({ 
+                type: "response.create",
+                response: {
+                  temperature: temp
+                }
+              });
+            })();
+          }
         }
         break;
         
       case "response.done":
         // Response complete
+        isAssistantResponding = false;
+        
         if (msg.response?.output && !accumulatedAssistantText) {
           // Extract assistant text if we didn't get it from done events
           msg.response.output.forEach(item => {
@@ -611,6 +777,7 @@ function onRealtimeMessage(e) {
         pendingUserUtterance = "";
         accumulatedAssistantText = "";
         currentResponseText = "";
+        shouldSendResponse = false;
 
         // Restore base instructions (remove transient context) for next turn
         updateInstructionsWithContext("");
@@ -622,12 +789,27 @@ function onRealtimeMessage(e) {
         }
         break;
         
+      case "response.cancelled":
+        // Response was cancelled
+        isAssistantResponding = false;
+        currentResponseText = "";
+        accumulatedAssistantText = "";
+        
+        // Ensure audio is unmuted for next response
+        if (remoteAudio) {
+          remoteAudio.muted = false;
+        }
+        
+        // Don't resume Secretary here as user is likely about to speak
+        break;
+        
       case "error":
         console.error("Realtime API error:", msg);
         if (msg.error?.message) {
           log(`\n[Error: ${msg.error.message}]\n`);
           status(`Error: ${msg.error.message}`);
         }
+        isAssistantResponding = false;
         break;
         
       case "session.created":
