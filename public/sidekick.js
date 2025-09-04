@@ -675,6 +675,10 @@ function onRealtimeMessage(e) {
         if (msg.delta) {
           if (!isAssistantResponding) {
             isAssistantResponding = true;
+            // Resume audio playback if it was paused (e.g., after interrupt)
+            if (remoteAudio && remoteAudio.paused) {
+              remoteAudio.play().catch(err => console.log("Audio play failed:", err));
+            }
           }
           currentResponseText += msg.delta;
           log(msg.delta);
@@ -698,6 +702,10 @@ function onRealtimeMessage(e) {
         if (msg.delta) {
           if (!isAssistantResponding) {
             isAssistantResponding = true;
+            // Resume audio playback if it was paused (e.g., after interrupt)
+            if (remoteAudio && remoteAudio.paused) {
+              remoteAudio.play().catch(err => console.log("Audio play failed:", err));
+            }
           }
           currentResponseText += msg.delta;
           log(msg.delta);
