@@ -470,7 +470,7 @@ app.post("/api/search", rateLimit, async (req, res) => {
     
     // Search for similar embeddings
     const results = searchSimilar(queryEmbedding, limit, sessionId);
-    res.json(results);
+    res.json({ results });
   } catch (error) {
     console.error("Search error:", error);
     res.status(500).json({ error: "Search failed" });
@@ -554,6 +554,39 @@ app.delete("/api/embeddings/:rowid", rateLimit, (req, res) => {
 app.get("/debug/count", (req, res) => {
   const row = db.prepare("select count(*) as n from vec_transcripts").get();
   res.json(row);
+});
+
+// Get last chunk endpoint for Sidekick context
+app.get("/api/sessions/:id/last-chunk", rateLimit, (req, res) => {
+  const { id } = req.params;
+  try {
+    // 1) buffer first
+    const buf = buffers.get(id); // this exists in your server.js
+    if (buf && buf.lines && buf.lines.length) {
+      return res.json({
+        source: "buffer",
+        content: buf.lines.join(" ").trim(),
+        started_at: buf.startedAt || null,
+        ended_at:   buf.lastAt   || null,
+        language:   buf.language || null
+      });
+    }
+
+    // 2) fallback to DB
+    const row = db.prepare(`
+      select content, started_at, ended_at, language
+      from vec_transcripts
+      where session_id = ?
+      order by ended_at desc
+      limit 1
+    `).get(id);
+
+    if (!row) return res.json({ source: "none", content: "" });
+    res.json({ source: "db", ...row });
+  } catch (err) {
+    console.error("last-chunk error", err);
+    res.status(500).json({ error: "Failed to read last chunk" });
+  }
 });
 
 app.get("/ephemeral-token", rateLimit, async (req, res) => {
