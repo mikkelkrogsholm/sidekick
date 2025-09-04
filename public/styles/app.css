@@ -18,7 +18,7 @@
 }
 
 .brand {
-  display: flex; align-items: baseline; gap: 10px;
+  display: flex; align-items: baseline; gap: var(--space-3);
 }
 
 .brand__title {
@@ -44,7 +44,7 @@
 .nav-link {
   display: inline-flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-s);
   color: var(--color-text-secondary);
   font-weight: 500;
@@ -64,7 +64,7 @@
 /* Status pill used across pages (your JS sets .status + state class) */
 .status {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 6px 10px;
+  padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: 999px;
   background: var(--color-surface);
@@ -118,7 +118,7 @@
   min-height: 420px;
   max-height: 60vh;
   overflow: auto;
-  padding: var(--space-5);
+  padding: var(--space-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-m);
   background: var(--color-surface);
@@ -127,9 +127,42 @@
 
 .transcript-line {
   padding: var(--space-2) 0;
-  border-bottom: 1px dashed rgba(0,0,0,0.06);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
 }
-.transcript-line:last-child { border-bottom: 0; }
+.transcript-line + .transcript-line { margin-top: var(--space-2); }
+
+/* Sidekick conversation blocks */
+.sidekick-conversation-block {
+  margin: var(--space-3) 0;
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-s);
+}
+
+.sidekick-conversation-header {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-2);
+  opacity: 0.7;
+}
+
+.sidekick-conversation-block .transcript-line {
+  padding: var(--space-1) 0;
+  margin-top: 0;
+}
+
+.sidekick-conversation-block .sidekick-user {
+  font-weight: 500;
+}
+
+.sidekick-conversation-block .sidekick-assistant {
+  margin-top: var(--space-2);
+  padding-left: var(--space-3);
+}
 
 /* Controls panel */
 .controls.card { padding: var(--space-5); }
@@ -141,6 +174,20 @@
   gap: var(--space-3);
 }
 
+/* Ask toolbar mirrors viewer toolbar proportions */
+.ask-toolbar { 
+  display: grid; 
+  grid-template-columns: 1fr auto; 
+  gap: var(--space-2); 
+}
+
+/* Start/Stop as balanced grid */
+.control-buttons { 
+  display: grid; 
+  grid-template-columns: 1fr 1fr; 
+  gap: var(--space-2); 
+}
+
 /* Audio indicator (keep your current #audioIndicator element) */
 #audioIndicator {
   height: 6px;
@@ -149,28 +196,29 @@
   opacity: 0.9;
 }
 
-/* Session sidebar (we'll style the existing #sessionPanel) */
-#sessionPanel {
-  position: relative;
-  display: grid;
-  gap: var(--space-4);
+/* Session management panel */
+.session-panel {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
 }
 
-#sessionList {
+.session-list {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-s);
-  max-height: 300px;
-  overflow: auto;
+  max-height: 200px;
+  overflow-y: auto;
   background: var(--color-surface);
 }
 
 .session-item {
-  padding: 10px 12px;
+  padding: var(--space-3);
   border-bottom: 1px solid var(--color-border);
   cursor: pointer;
+  transition: background var(--duration) var(--ease);
 }
 .session-item:last-child { border-bottom: 0; }
-.session-item:hover { background: #F6F6F5; }
+.session-item:hover { background: var(--color-bg); }
 
 .session-item.active {
   background: var(--color-accent);
@@ -194,12 +242,15 @@
 
 /* Current session display */
 .current-session-display {
-  background: white;
-  padding: 10px 15px;
-  border-radius: 8px;
+  background: var(--color-bg);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-s);
+  border: 1px solid var(--color-border);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  font-size: var(--text-s);
 }
 
 .session-indicator {
@@ -214,7 +265,8 @@
   color: var(--color-text-muted);
   font-style: italic;
   text-align: center;
-  padding: 40px;
+  padding: var(--space-6);
+  font-size: var(--text-s);
 }
 
 /* ========== DASHBOARD ========== */
@@ -306,8 +358,8 @@
 .nav-session {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
   background: var(--color-bg);
   border-radius: 20px;
   font-size: var(--text-s);
@@ -370,17 +422,38 @@
   100% { transform: rotate(360deg); }
 }
 
-/* ========== SIDEKICK TWO-PANEL LAYOUT ========== */
-.grid-2col { 
-  display: grid; 
-  grid-template-columns: 1fr 1fr; 
-  gap: var(--space-md);
-  padding: var(--space-md);
+/* ========== TRANSCRIBE TWO-PANEL LAYOUT ========== */
+/* Secretary gets more room than Sidekick on wide screens */
+.grid-2col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(320px, 1fr);
+  gap: var(--space-6);
+  align-items: start;
+  /* container already handles horizontal padding; avoid double padding */
+  padding-inline: 0; /* keep vertical padding from .index */
 }
-@media (max-width: 920px) { 
-  .grid-2col { 
-    grid-template-columns: 1fr; 
-  } 
+@media (max-width: 1200px) {
+  .grid-2col {
+    grid-template-columns: minmax(0, 1.4fr) minmax(300px, 1fr);
+  }
+}
+@media (max-width: 920px) {
+  .grid-2col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Panel header and actions */
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-sm);
+}
+.panel-actions {
+  display: inline-flex;
+  gap: var(--space-2);
+  flex: 0 0 auto;
 }
 
 /* Settings drawer */
@@ -495,15 +568,17 @@
 
 /* Secretary panel transcript area */
 #secretaryPanel #transcript {
-  min-height: 300px;
-  max-height: 400px;
+  min-height: 360px;
+  max-height: 50vh;
   overflow-y: auto;
-  padding: var(--space-sm);
-  background: var(--color-bg);
+  padding: var(--space-md);
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-s);
-  font-family: ui-monospace, Monaco, 'Cascadia Code', 'Segoe UI Mono', Consolas, monospace;
+  font-family: var(--font-sans);
   font-size: var(--text-s);
+  line-height: 1.6;
+  box-shadow: none;
 }
 
 /* Card styling for both panels */
@@ -515,3 +590,28 @@
   padding: var(--space-md);
   box-shadow: var(--shadow-sm);
 }
+
+/* Ghost/quiet button for secondary actions like Settings/Sessions */
+.button--ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+.button--ghost:hover {
+  background: var(--color-bg);
+}
+
+/* Emphasize primary Connect action */
+#skConnectBtn.button--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: #fff;
+}
+
+/* Tighten field spacing in panels */
+#secretaryPanel .field + .field,
+#sidekickPanel .field + .field { margin-top: var(--space-md); }
+
+/* Align input + button rows nicely */
+#sidekickPanel .field .row { align-items: stretch; }
+#sidekickPanel .field .row .input { height: 40px; }

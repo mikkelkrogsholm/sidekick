@@ -1,4 +1,5 @@
-export const Settings = {
+// Settings management module
+const Settings = {
   get(k, d){ try { return JSON.parse(localStorage.getItem(k) ?? JSON.stringify(d)); } catch { return d; } },
   set(k, v){ localStorage.setItem(k, JSON.stringify(v)); }
 };
@@ -6,10 +7,11 @@ export const Settings = {
 // Defaults
 const defaults = {
   sk_prompt: "You are Sidekick. Be concise and actionable.",
-  sk_model: "gpt-realtime",
+  sk_model: "gpt-4o-realtime-preview-2024-12-17",
   sk_voice: "marin",
   sk_use_notes: true,
   sk_autopause: true,
+  sk_record_conversations: false,
   sk_temp: 0.6,
   sec_show_timestamps: false
 };
@@ -17,9 +19,10 @@ const defaults = {
 // Wire drawer
 window.addEventListener('DOMContentLoaded', () => {
   const el = id => document.getElementById(id);
-  const map = ["sk_prompt","sk_model","sk_voice","sk_use_notes","sk_autopause","sk_temp","sec_show_timestamps"];
+  const map = ["sk_prompt","sk_model","sk_voice","sk_use_notes","sk_autopause","sk_record_conversations","sk_temp","sec_show_timestamps"];
   map.forEach(key => {
     const node = el(key);
+    if (!node) return;
     const val = Settings.get(key, defaults[key]);
     if (node.type === "checkbox") node.checked = !!val;
     else if (node.tagName === "TEXTAREA" || node.tagName === "INPUT" || node.tagName === "SELECT") node.value = val;
@@ -32,3 +35,7 @@ window.addEventListener('DOMContentLoaded', () => {
   el("skSettingsBtn")?.addEventListener("click", () => el("settingsDrawer").classList.remove("hidden"));
   el("closeSettings")?.addEventListener("click", () => el("settingsDrawer").classList.add("hidden"));
 });
+
+// Export for use in other modules
+window.Settings = Settings;
+window.settingsDefaults = defaults;
