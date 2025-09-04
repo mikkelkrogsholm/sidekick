@@ -1,0 +1,371 @@
+/* public/styles/app.css */
+
+/* ========== APP SHELL (shared) ========== */
+.app {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+}
+
+.topbar {
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.topbar__inner {
+  height: 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+.brand {
+  display: flex; align-items: baseline; gap: 10px;
+}
+
+.brand__title {
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.01em;
+}
+
+.brand__meta {
+  font-size: var(--text-s);
+  color: var(--color-text-muted);
+}
+
+/* Navigation */
+.nav-links {
+  display: flex;
+  gap: var(--space-5);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border-radius: var(--radius-s);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  transition: background var(--duration) var(--ease), color var(--duration) var(--ease);
+}
+
+.nav-link:hover {
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+}
+
+.nav-link.active {
+  background: var(--color-accent);
+  color: white;
+}
+
+/* Status pill used across pages (your JS sets .status + state class) */
+.status {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  font-size: var(--text-s);
+  color: var(--color-text-muted);
+}
+
+.status .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--color-border);
+}
+
+.status.connecting .dot { background: var(--color-warning); }
+.status.active .dot     { background: var(--color-success); }
+.status.idle .dot       { background: var(--color-border); }
+.status.error .dot      { background: var(--color-danger); }
+.status.error           { color: var(--color-danger); border-color: var(--color-danger); }
+
+/* Embedding toast your JS injects: .embedding-notification [processing|success|error] */
+.embedding-notification {
+  position: fixed; right: 20px; bottom: 20px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-m);
+  border-radius: var(--radius-m);
+  padding: var(--space-4) var(--space-5);
+  color: var(--color-text-secondary);
+  z-index: 50;
+}
+.embedding-notification.processing { border-color: var(--color-warning); }
+.embedding-notification.success    { border-color: var(--color-success); }
+.embedding-notification.error      { border-color: var(--color-danger); color: var(--color-danger); }
+
+/* ========== INDEX (Live Transcription) ========== */
+.index {
+  padding-block: var(--space-6);
+}
+
+.index__layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-6);
+}
+
+@media (max-width: 960px) {
+  .index__layout { grid-template-columns: 1fr; }
+}
+
+/* Transcript panel */
+#transcript {
+  min-height: 420px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-s);
+}
+
+.transcript-line {
+  padding: var(--space-2) 0;
+  border-bottom: 1px dashed rgba(0,0,0,0.06);
+}
+.transcript-line:last-child { border-bottom: 0; }
+
+/* Controls panel */
+.controls.card { padding: var(--space-5); }
+.controls .field + .field { margin-top: var(--space-4); }
+
+.controls .buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+
+/* Audio indicator (keep your current #audioIndicator element) */
+#audioIndicator {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--color-success), var(--color-border));
+  opacity: 0.9;
+}
+
+/* Session sidebar (we'll style the existing #sessionPanel) */
+#sessionPanel {
+  position: relative;
+  display: grid;
+  gap: var(--space-4);
+}
+
+#sessionList {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-s);
+  max-height: 300px;
+  overflow: auto;
+  background: var(--color-surface);
+}
+
+.session-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+}
+.session-item:last-child { border-bottom: 0; }
+.session-item:hover { background: #F6F6F5; }
+
+.session-item.active {
+  background: var(--color-accent);
+  color: white;
+}
+
+.session-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.session-name {
+  font-weight: 600;
+}
+
+.session-meta {
+  font-size: 0.85rem;
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+/* Current session display */
+.current-session-display {
+  background: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-indicator {
+  width: 8px;
+  height: 8px;
+  background: var(--color-success);
+  border-radius: 50%;
+}
+
+/* Placeholder text */
+.placeholder {
+  color: var(--color-text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 40px;
+}
+
+/* ========== DASHBOARD ========== */
+.dashboard {
+  padding-block: var(--space-6);
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-4);
+}
+@media (max-width: 960px) {
+  .stats { grid-template-columns: 1fr 1fr; }
+}
+
+.stat {
+  padding: var(--space-5);
+  text-align: left;
+}
+.stat .kpi {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+.stat .label {
+  font-size: var(--text-s);
+  color: var(--color-text-muted);
+}
+
+#sessionsList {
+  margin-top: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+#sessionsList .row {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+#sessionsList .row:last-child { border-bottom: 0; }
+
+/* Health indicator (dashboard) */
+#healthDot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--color-border);
+}
+#healthText { color: var(--color-text-muted); }
+.healthy #healthDot { background: var(--color-success); }
+.unhealthy #healthDot { background: var(--color-danger); }
+
+/* ========== VIEWER (Embeddings) ========== */
+.viewer {
+  padding-block: var(--space-6);
+}
+
+.viewer .toolbar {
+  display: grid; gap: var(--space-3);
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+}
+@media (max-width: 960px) {
+  .viewer .toolbar { grid-template-columns: 1fr; }
+}
+
+#searchResults, #embeddingsList {
+  margin-top: var(--space-4);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-m);
+  overflow: hidden;
+}
+
+/* Simple table-ish rows for results */
+.result-row, .embedding-row {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.result-row:last-child, .embedding-row:last-child { border-bottom: 0; }
+
+.meta {
+  font-size: var(--text-s);
+  color: var(--color-text-muted);
+}
+
+/* Navigation session indicator */
+.nav-session {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--color-bg);
+  border-radius: 20px;
+  font-size: var(--text-s);
+}
+
+.nav-session .session-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-border);
+}
+
+.nav-session .session-indicator.active {
+  background: var(--color-success);
+}
+
+/* Session section */
+.session-section {
+  background: var(--color-bg);
+  border-radius: var(--radius-m);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+.session-title {
+  font-size: var(--text-l);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.new-session-input {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.new-session-input input {
+  flex: 1;
+}
+
+/* Spinner animation for embedding notification */
+.embedding-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border);
+  border-top: 2px solid var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}

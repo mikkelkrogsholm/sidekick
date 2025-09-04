@@ -1,0 +1,207 @@
+/* public/styles/base.css */
+
+/* ========== TOKENS (Scandinavian Minimalism) ========== */
+:root {
+  /* Colors */
+  --color-bg: #FAFAF9;              /* Off-white app background */
+  --color-surface: #FFFFFF;         /* Surfaces / cards */
+  --color-elevated: #FFFFFF;        /* Same as surface; elevate with subtle shadow */
+  --color-border: #E5E5E5;          /* Hairline borders */
+  --color-text-primary: #1A1A1A;    /* Near-black headings */
+  --color-text-secondary: #4D4D4D;  /* Body text */
+  --color-text-muted: #7A7A7A;      /* Meta/labels */
+
+  /* Accent neutrals + nature accent (from DESIGN.md) */
+  --color-accent: #2D2D2D;          /* Charcoal primary */
+  --color-accent-quiet: #6BAA75;    /* Sage – sparingly for affirmations/success */
+
+  /* Semantic states */
+  --color-info: #2D2D2D;            /* Use charcoal for info emphasis */
+  --color-success: #6BAA75;
+  --color-danger: #D9534F;          /* Soft red, used minimally */
+  --color-warning: #C9A227;         /* Muted amber */
+
+  /* Spacing scale (8pt-ish) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Radii */
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 16px;
+
+  /* Shadows (subtle) */
+  --shadow-s: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-m: 0 4px 12px rgba(0,0,0,0.06);
+
+  /* Motion */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration: 200ms;
+
+  /* Layout */
+  --container-max: 1120px;
+  --container-pad: 24px;
+
+  /* Type */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, system-ui, sans-serif;
+  --text-xs: 12px;
+  --text-s: 14px;
+  --text-m: 16px;
+  --text-l: 20px;
+  --text-xl: 28px;
+  --text-xxl: 36px;
+}
+
+/* ========== RESET (minimal) ========== */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: var(--text-m);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img, svg { display: block; max-width: 100%; }
+
+button, input, select, textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a { color: inherit; text-decoration: none; }
+
+/* ========== BASE TYPOGRAPHY ========== */
+h1, h2, h3 {
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-4);
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: var(--text-xxl); font-weight: 700; }
+h2 { font-size: var(--text-xl);  font-weight: 600; }
+h3 { font-size: var(--text-l);   font-weight: 600; }
+
+p { margin: 0 0 var(--space-4); }
+
+/* ========== LAYOUT HELPERS ========== */
+.container {
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--container-pad);
+}
+
+.stack > * + * {
+  margin-top: var(--space-4);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+/* Visually hidden for a11y helpers */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+
+/* ========== PRIMITIVES ========== */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.input, select, textarea {
+  width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-s);
+  padding: 10px 12px;
+  transition: border-color var(--duration) var(--ease), box-shadow var(--duration) var(--ease);
+}
+
+.input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(45,45,45,0.08);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-s);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease), box-shadow var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease);
+}
+
+.button:hover { transform: translateY(-1px); box-shadow: var(--shadow-m); }
+.button:active { transform: translateY(0); box-shadow: var(--shadow-s); }
+
+.button--primary {
+  background: var(--color-accent);
+  color: white;
+  border-color: var(--color-accent);
+}
+
+.button--danger {
+  background: #FFFFFF;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

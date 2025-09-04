@@ -3,370 +3,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="stylesheet" href="/styles/base.css" />
+    <link rel="stylesheet" href="/styles/app.css" />
     <title>Embedded Chunks Viewer</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 0;
-            margin: 0;
-        }
-        
-        /* Navigation Styles */
-        .navbar {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        
-        .nav-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .nav-brand {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .nav-icon {
-            font-size: 1.5rem;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 30px;
-        }
-        
-        .nav-link {
-            color: #666;
-            text-decoration: none;
-            font-weight: 500;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
-        }
-        
-        .nav-link:hover {
-            background: #f0f0f0;
-            color: #667eea;
-        }
-        
-        .nav-link.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        
-        .nav-session {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: #f8f9fa;
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-        
-        .nav-session .session-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #dc3545;
-        }
-        
-        .nav-session .session-indicator.active {
-            background: #28a745;
-            animation: pulse-nav 2s infinite;
-        }
-        
-        @keyframes pulse-nav {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        
-        @keyframes slideOut {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 20px auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            padding: 40px;
-        }
-        
-        h1 {
-            color: #333;
-            margin-bottom: 30px;
-            text-align: center;
-            font-size: 2.5rem;
-        }
-        
-        .controls {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        
-        select, input, button {
-            padding: 10px 15px;
-            font-size: 14px;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-        }
-        
-        select {
-            flex: 1;
-            min-width: 200px;
-        }
-        
-        button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        .search-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-        }
-        
-        .search-input {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        .search-input input {
-            flex: 1;
-        }
-        
-        .stats {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-        }
-        
-        .stat-card {
-            flex: 1;
-            min-width: 150px;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            color: #6c757d;
-            margin-top: 5px;
-        }
-        
-        .embeddings-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        
-        .embedding-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .embedding-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        
-        .delete-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .delete-btn:hover {
-            background: #c82333;
-            transform: translateY(-1px);
-            box-shadow: 0 2px 5px rgba(220, 53, 69, 0.3);
-        }
-        
-        .delete-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .embedding-meta {
-            display: flex;
-            gap: 15px;
-            font-size: 0.9rem;
-            color: #6c757d;
-            flex-wrap: wrap;
-        }
-        
-        .meta-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .embedding-content {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 1.6;
-        }
-        
-        .search-result {
-            border-left-color: #28a745;
-        }
-        
-        .distance-badge {
-            background: #28a745;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.85rem;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-        }
-        
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-        
-    </style>
 </head>
 <body>
-    <!-- Navigation Bar -->
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <span class="nav-icon">🎙️</span>
-                <span>Voice Transcription</span>
+    <div class="app">
+        <header class="topbar">
+            <div class="container topbar__inner">
+                <div class="brand">
+                    <img src="/logo.svg" alt="Voice Transcription Logo" style="height: 32px; width: auto;">
+                    <h1 class="brand__title">Embeddings</h1>
+                    <span class="brand__meta" id="navSession">All sessions</span>
+                </div>
+                
+                <div class="nav-links">
+                    <a href="/dashboard.html" class="nav-link">Dashboard</a>
+                    <a href="/" class="nav-link">Transcribe</a>
+                    <a href="/viewer.html" class="nav-link active">Viewer</a>
+                </div>
+                
+                <div class="badge">Chunks: <span id="totalChunks">0</span></div>
             </div>
-            <div class="nav-links">
-                <a href="/dashboard.html" class="nav-link">📊 Dashboard</a>
-                <a href="/" class="nav-link">🎤 Transcribe</a>
-                <a href="/viewer.html" class="nav-link active">📝 Viewer</a>
-            </div>
-            <div class="nav-session" id="navSession">
-                <span class="session-indicator"></span>
-                <span class="session-text">No Session</span>
-            </div>
-        </div>
-    </nav>
+        </header>
 
-    <div class="container">
-        <h1>📊 Embedded Chunks Viewer</h1>
-        
-        <div class="stats" id="stats">
-            <div class="stat-card">
-                <div class="stat-value" id="totalChunks">0</div>
-                <div class="stat-label">Total Chunks</div>
+        <main class="viewer">
+            <div class="container stack">
+                <section class="card" style="padding: 16px;">
+                    <div class="toolbar" style="display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px; align-items: center;">
+                        <input id="searchQuery" class="input" placeholder="Search…" />
+                        <input id="searchLimit" class="input" type="number" min="1" value="5" style="width: 80px;" />
+                        <button id="searchBtn" class="button button--primary">Search</button>
+                        <button id="refreshBtn" class="button">Refresh</button>
+                    </div>
+                </section>
+
+                <section class="card" style="padding: 8px 0; display: none;" id="searchResultsSection">
+                    <div id="searchResults"></div>
+                </section>
+
+                <section class="card" style="padding: 16px;">
+                    <h3>Filters</h3>
+                    <div class="row" style="gap: 16px;">
+                        <select id="sessionFilter" class="input" style="flex: 1;">
+                            <option value="">All Sessions</option>
+                        </select>
+                        <input id="limitInput" class="input" type="number" value="50" min="1" max="1000" style="width: 100px;" />
+                    </div>
+                </section>
+
+                <section class="card" style="padding: 16px;">
+                    <h3>Stats</h3>
+                    <div id="stats" class="row" style="flex-wrap: wrap; gap: 16px;">
+                        <div class="badge">Sessions: <span id="totalSessions">0</span></div>
+                        <div class="badge">Avg length: <span id="avgLength">–</span></div>
+                    </div>
+                </section>
+
+                <section class="card" style="padding: 8px 0;">
+                    <div id="embeddingsList">
+                        <div style="padding: 20px; text-align: center; color: var(--color-text-muted);">
+                            Loading embeddings...
+                        </div>
+                    </div>
+                </section>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="totalSessions">0</div>
-                <div class="stat-label">Sessions</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-value" id="avgLength">0</div>
-                <div class="stat-label">Avg. Length</div>
-            </div>
-        </div>
-        
-        <div class="search-section">
-            <h3>🔍 Semantic Search</h3>
-            <div class="search-input">
-                <input type="text" id="searchQuery" placeholder="Search for similar content..." />
-                <input type="number" id="searchLimit" value="5" min="1" max="20" style="width: 100px;" />
-                <button id="searchBtn">Search</button>
-            </div>
-            <div id="searchResults"></div>
-        </div>
-        
-        <div class="controls">
-            <select id="sessionFilter">
-                <option value="">All Sessions</option>
-            </select>
-            <input type="number" id="limitInput" value="50" min="1" max="1000" placeholder="Limit" style="width: 100px;" />
-            <button id="refreshBtn">Refresh</button>
-        </div>
-        
-        <div id="embeddingsList" class="embeddings-list">
-            <div class="loading">Loading embeddings...</div>
-        </div>
+        </main>
     </div>
 
     <script>
@@ -378,6 +81,7 @@
         const searchLimit = document.getElementById('searchLimit');
         const searchBtn = document.getElementById('searchBtn');
         const searchResults = document.getElementById('searchResults');
+        const searchResultsSection = document.getElementById('searchResultsSection');
         
         // Stats elements
         const totalChunks = document.getElementById('totalChunks');
@@ -411,7 +115,7 @@
         }
         
         async function loadEmbeddings() {
-            embeddingsList.innerHTML = '<div class="loading">Loading embeddings...</div>';
+            embeddingsList.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--color-text-muted);">Loading embeddings...</div>';
             
             try {
                 const params = new URLSearchParams();
@@ -428,63 +132,83 @@
                 updateStats(embeddings);
             } catch (error) {
                 console.error('Error loading embeddings:', error);
-                embeddingsList.innerHTML = '<div class="error">Failed to load embeddings</div>';
+                embeddingsList.innerHTML = '<div style="padding: 20px; color: var(--color-danger);">Failed to load embeddings</div>';
             }
         }
         
         function displayEmbeddings(embeddings, isSearch = false) {
+            const container = isSearch ? searchResults : embeddingsList;
+            
             if (embeddings.length === 0) {
-                embeddingsList.innerHTML = '<div class="loading">No embeddings found</div>';
+                container.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--color-text-muted);">No embeddings found</div>';
                 return;
             }
             
-            embeddingsList.innerHTML = '';
+            container.innerHTML = '';
             
             embeddings.forEach(embedding => {
-                const card = document.createElement('div');
-                card.className = isSearch ? 'embedding-card search-result' : 'embedding-card';
-                card.dataset.rowid = embedding.rowid;
-                card.dataset.sessionId = embedding.session_id;
+                const row = document.createElement('div');
+                row.className = 'row';
+                row.style.padding = '12px 16px';
+                row.style.borderBottom = '1px solid var(--color-border)';
+                row.style.flexDirection = 'column';
+                row.style.gap = '8px';
+                row.dataset.rowid = embedding.rowid;
+                row.dataset.sessionId = embedding.session_id;
                 
                 const startDate = new Date(embedding.started_at);
                 const endDate = new Date(embedding.ended_at);
                 const duration = Math.round((endDate - startDate) / 1000);
                 
-                // Create header with meta info and delete button
-                const header = document.createElement('div');
-                header.className = 'embedding-header';
+                // Create header with meta info
+                const headerDiv = document.createElement('div');
+                headerDiv.className = 'row';
+                headerDiv.style.justifyContent = 'space-between';
+                headerDiv.style.alignItems = 'flex-start';
                 
                 const metaDiv = document.createElement('div');
-                metaDiv.className = 'embedding-meta';
+                metaDiv.style.display = 'flex';
+                metaDiv.style.flexWrap = 'wrap';
+                metaDiv.style.gap = '12px';
+                metaDiv.style.fontSize = '0.85rem';
+                metaDiv.style.color = 'var(--color-text-muted)';
                 metaDiv.innerHTML = `
-                    <span class="meta-item">📅 ${escapeHtml(startDate.toLocaleString())}</span>
-                    <span class="meta-item">⏱️ ${duration}s</span>
-                    <span class="meta-item">🌐 ${escapeHtml(embedding.language)}</span>
-                    <span class="meta-item">📝 ${embedding.content_length} chars</span>
-                    ${embedding.distance !== undefined ? `<span class="distance-badge">Score: ${(1 - embedding.distance).toFixed(3)}</span>` : ''}
+                    <span>${escapeHtml(startDate.toLocaleString())}</span>
+                    <span>${duration}s</span>
+                    <span>${escapeHtml(embedding.language)}</span>
+                    <span>${embedding.content_length} chars</span>
+                    ${embedding.distance !== undefined ? `<span style="background: var(--color-success); color: white; padding: 2px 6px; border-radius: 4px;">Score: ${(1 - embedding.distance).toFixed(3)}</span>` : ''}
                 `;
+                
+                headerDiv.appendChild(metaDiv);
                 
                 // Add delete button (not for search results)
                 if (!isSearch && embedding.rowid) {
                     const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.innerHTML = '🗑️ Delete';
+                    deleteBtn.className = 'button button--danger';
+                    deleteBtn.style.padding = '4px 8px';
+                    deleteBtn.style.fontSize = '0.85rem';
+                    deleteBtn.textContent = 'Delete';
                     deleteBtn.onclick = () => deleteEmbedding(embedding.rowid, embedding.session_id);
-                    header.appendChild(metaDiv);
-                    header.appendChild(deleteBtn);
-                } else {
-                    header.appendChild(metaDiv);
+                    headerDiv.appendChild(deleteBtn);
                 }
                 
-                card.appendChild(header);
+                row.appendChild(headerDiv);
                 
-                // Add content as text (not HTML) to prevent XSS
+                // Add content
                 const contentDiv = document.createElement('div');
-                contentDiv.className = 'embedding-content';
+                contentDiv.style.background = 'var(--color-bg)';
+                contentDiv.style.padding = '12px';
+                contentDiv.style.borderRadius = 'var(--radius-s)';
+                contentDiv.style.fontFamily = 'monospace';
+                contentDiv.style.fontSize = '0.9rem';
+                contentDiv.style.lineHeight = '1.5';
+                contentDiv.style.maxHeight = '200px';
+                contentDiv.style.overflow = 'auto';
                 contentDiv.textContent = embedding.content;
-                card.appendChild(contentDiv);
+                row.appendChild(contentDiv);
                 
-                embeddingsList.appendChild(card);
+                container.appendChild(row);
             });
         }
         
@@ -508,11 +232,13 @@
                 const result = await response.json();
                 console.log('Deleted embedding:', result);
                 
-                // Remove the card from UI
-                const card = document.querySelector(`[data-rowid="${rowid}"]`);
-                if (card) {
-                    card.style.animation = 'slideOut 0.3s ease';
-                    setTimeout(() => card.remove(), 300);
+                // Remove the row from UI
+                const row = document.querySelector(`[data-rowid="${rowid}"]`);
+                if (row) {
+                    row.style.opacity = '0';
+                    row.style.transform = 'translateX(-20px)';
+                    row.style.transition = 'all 0.3s ease';
+                    setTimeout(() => row.remove(), 300);
                 }
                 
                 // Update stats
@@ -530,7 +256,7 @@
                 const totalLength = embeddings.reduce((sum, e) => sum + e.content_length, 0);
                 avgLength.textContent = Math.round(totalLength / embeddings.length);
             } else {
-                avgLength.textContent = 0;
+                avgLength.textContent = '0';
             }
         }
         
@@ -541,7 +267,8 @@
                 return;
             }
             
-            searchResults.innerHTML = '<div class="loading">Searching...</div>';
+            searchResultsSection.style.display = 'block';
+            searchResults.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--color-text-muted);">Searching...</div>';
             
             try {
                 const response = await fetch('/api/search', {
@@ -559,41 +286,21 @@
                 const results = await response.json();
                 
                 if (results.length === 0) {
-                    searchResults.innerHTML = '<div class="loading">No matching results found</div>';
+                    searchResults.innerHTML = '<div style="padding: 20px; text-align: center; color: var(--color-text-muted);">No matching results found</div>';
                 } else {
-                    searchResults.innerHTML = '<h4>Search Results:</h4>';
-                    const resultsContainer = document.createElement('div');
-                    resultsContainer.className = 'embeddings-list';
-                    searchResults.appendChild(resultsContainer);
+                    const headerDiv = document.createElement('div');
+                    headerDiv.style.padding = '12px 16px';
+                    headerDiv.style.fontWeight = '600';
+                    headerDiv.textContent = 'Search Results:';
+                    searchResults.innerHTML = '';
+                    searchResults.appendChild(headerDiv);
                     
-                    // Display search results
-                    results.forEach(result => {
-                        const card = document.createElement('div');
-                        card.className = 'embedding-card search-result';
-                        
-                        // Safe HTML construction for search results
-                        const searchHeaderHtml = `
-                            <div class="embedding-header">
-                                <div class="embedding-meta">
-                                    <span class="meta-item">📊 Session: ${escapeHtml(result.session_id.substring(0, 8))}...</span>
-                                    <span class="distance-badge">Similarity: ${(1 - result.distance).toFixed(3)}</span>
-                                </div>
-                            </div>
-                        `;
-                        card.innerHTML = searchHeaderHtml;
-                        
-                        // Add content as text to prevent XSS
-                        const contentDiv = document.createElement('div');
-                        contentDiv.className = 'embedding-content';
-                        contentDiv.textContent = result.content;
-                        card.appendChild(contentDiv);
-                        
-                        resultsContainer.appendChild(card);
-                    });
+                    // Display search results using the same function
+                    displayEmbeddings(results, true);
                 }
             } catch (error) {
                 console.error('Search error:', error);
-                searchResults.innerHTML = '<div class="error">Search failed</div>';
+                searchResults.innerHTML = '<div style="padding: 20px; color: var(--color-danger);">Search failed</div>';
             }
         }
         
@@ -611,10 +318,7 @@
             const navSession = document.getElementById('navSession');
             const savedSessionName = localStorage.getItem('currentSessionName');
             if (navSession && savedSessionName) {
-                const indicator = navSession.querySelector('.session-indicator');
-                const text = navSession.querySelector('.session-text');
-                indicator.classList.add('active');
-                text.textContent = savedSessionName;
+                navSession.textContent = savedSessionName;
             }
         }
         
