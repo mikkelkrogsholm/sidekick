@@ -105,7 +105,7 @@ function createIcon(name, options = {}) {
     svg.setAttribute(key, value);
   });
   
-  // Load icon from Lucide CDN
+  // Load icon from Lucide CDN (lucide-static provides raw SVG files)
   loadLucideIcon(svg, iconName);
   
   return svg;
@@ -118,7 +118,7 @@ function createIcon(name, options = {}) {
  */
 async function loadLucideIcon(svg, iconName) {
   try {
-    const response = await fetch(`https://cdn.jsdelivr.net/npm/lucide@latest/icons/${iconName}.svg`);
+    const response = await fetch(`https://cdn.jsdelivr.net/npm/lucide-static@latest/icons/${iconName}.svg`);
     if (response.ok) {
       const text = await response.text();
       const parser = new DOMParser();
