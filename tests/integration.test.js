@@ -270,9 +270,9 @@ describe('Secretary-Sidekick Integration Tests', () => {
       const pttBtn = document.getElementById('skPTT');
       
       if (pttBtn) {
-        // Simulate mousedown (PTT start)
-        const mouseDownEvent = new dom.window.Event('mousedown');
-        pttBtn.dispatchEvent(mouseDownEvent);
+        // Simulate pointerdown (PTT start) - changed from mousedown
+        const pointerDownEvent = new dom.window.Event('pointerdown');
+        pttBtn.dispatchEvent(pointerDownEvent);
       }
 
       // Wait for async operations
@@ -294,9 +294,9 @@ describe('Secretary-Sidekick Integration Tests', () => {
       const pttBtn = document.getElementById('skPTT');
       
       if (pttBtn) {
-        // Simulate mouseup (PTT end)
-        const mouseUpEvent = new dom.window.Event('mouseup');
-        pttBtn.dispatchEvent(mouseUpEvent);
+        // Simulate pointerup (PTT end) - changed from mouseup
+        const pointerUpEvent = new dom.window.Event('pointerup');
+        pttBtn.dispatchEvent(pointerUpEvent);
       }
 
       await new Promise(resolve => setTimeout(resolve, 100));

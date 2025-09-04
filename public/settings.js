@@ -13,13 +13,14 @@ const defaults = {
   sk_autopause: true,
   sk_record_conversations: false,
   sk_temp: 0.6,
+  sk_ptt_mode: "hold",
   sec_show_timestamps: false
 };
 
 // Wire drawer
 window.addEventListener('DOMContentLoaded', () => {
   const el = id => document.getElementById(id);
-  const map = ["sk_prompt","sk_model","sk_voice","sk_use_notes","sk_autopause","sk_record_conversations","sk_temp","sec_show_timestamps"];
+  const map = ["sk_prompt","sk_model","sk_voice","sk_use_notes","sk_autopause","sk_record_conversations","sk_temp","sk_ptt_mode","sec_show_timestamps"];
   map.forEach(key => {
     const node = el(key);
     if (!node) return;
