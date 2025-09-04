@@ -52,15 +52,8 @@ const ICON_REGISTRY = {
   'volume': 'volume-2'
 };
 
-// Console icons for server-side logging (text-based)
-const CONSOLE_ICONS = {
-  'robot': '🤖',
-  'error': '❌',
-  'warning': '⚠️',
-  'success': '✅',
-  'info': 'ℹ️',
-  'time': '⏱️'
-};
+// Note: Console/logging icons are handled server-side in `icons-console.js`.
+// Client code should avoid emoji usage and rely on SVG icons via Lucide.
 
 /**
  * Create an SVG icon element
@@ -170,9 +163,7 @@ function createFallbackIcon(svg) {
  * @param {string} name - Icon name
  * @returns {string} Console-appropriate icon
  */
-function getConsoleIcon(name) {
-  return CONSOLE_ICONS[name] || '•';
-}
+// No client console icon mapping to avoid emoji usage.
 
 /**
  * Replace an element with an icon
@@ -202,10 +193,8 @@ function prependIcon(element, iconName, options = {}) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     createIcon,
-    getConsoleIcon,
     replaceWithIcon,
     prependIcon,
-    ICON_REGISTRY,
-    CONSOLE_ICONS
+    ICON_REGISTRY
   };
 }

@@ -633,7 +633,7 @@ app.listen(PORT, () => {
   console.log("╠════════════════════════════════════════════════╣");
   console.log(`║ ${getIcon('server')} Server:    http://localhost:${PORT}${' '.repeat(13 - PORT.toString().length)}║`);
   console.log(`║ ${getIcon('viewer')} Viewer:    http://localhost:${PORT}/viewer.html${' '.repeat(3 - PORT.toString().length)}║`);
-  console.log(`║ ${getIcon('database')} Database:  ${process.env.SQLITE_DB_PATH ? '✓ Custom path' : '✓ Default path'}              ║`);
+  console.log(`║ ${getIcon('database')} Database:  ${process.env.SQLITE_DB_PATH ? 'OK Custom path' : 'OK Default path'}            ║`);
   console.log(`║ ${getIcon('robot')} AI Model:  ${EMBED_MODEL.substring(0, 20).padEnd(20)}         ║`);
   console.log(`║ ${getIcon('time')} Interval:  ${INTERVAL_MIN} minutes                         ║`);
   console.log("╚════════════════════════════════════════════════╝");
