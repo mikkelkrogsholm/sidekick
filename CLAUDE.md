@@ -1,0 +1,1 @@
+- Always follow the UI design principles laid out in @docs/DESIGN.md
