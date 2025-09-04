@@ -6,6 +6,7 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg">
     <link rel="stylesheet" href="/styles/base.css" />
     <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/icons.css" />
     <title>Live Audio Transcription</title>
 </head>
 <body>
@@ -233,7 +234,7 @@
                 `;
             } else {
                 notification.innerHTML = `
-                    <span>✓</span>
+                    <span>OK</span>
                     <span>${message}</span>
                 `;
             }
@@ -739,6 +740,43 @@
         window.addEventListener('beforeunload', () => {
             stopTranscription();
         });
+    </script>
+    <script src="/icons.js"></script>
+    <script>
+      // Enhance UI with minimalist icons once icons.js is available
+      (function enhanceUIWithIcons() {
+        const enhance = () => {
+          if (typeof createIcon !== 'function') return;
+
+          const attach = (el, name, opts = {}) => {
+            if (!el) return;
+            try {
+              const icon = createIcon(name, { size: 'sm', ...opts });
+              el.insertBefore(icon, el.firstChild);
+            } catch (_) {}
+          };
+
+          // Primary controls
+          attach(document.getElementById('startBtn'), 'play');
+          attach(document.getElementById('stopBtn'), 'stop');
+          attach(document.getElementById('skSettingsBtn'), 'settings');
+          attach(document.getElementById('toggleSessionsBtn'), 'sessions');
+
+          // Top nav
+          const navDashboard = document.querySelector('a[href="/dashboard.html"]');
+          const navTranscribe = document.querySelector('a[href="/"]');
+          const navViewer = document.querySelector('a[href="/viewer.html"]');
+          attach(navDashboard, 'dashboard');
+          attach(navTranscribe, 'microphone');
+          attach(navViewer, 'viewer');
+        };
+
+        if (document.readyState === 'loading') {
+          window.addEventListener('DOMContentLoaded', enhance);
+        } else {
+          enhance();
+        }
+      })();
     </script>
 </body>
 </html>

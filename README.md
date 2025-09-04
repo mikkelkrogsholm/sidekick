@@ -4,11 +4,11 @@ A simple web application that uses OpenAI's Realtime API to transcribe live audi
 
 ## Features
 
-- 🎙️ Real-time audio capture from browser microphone
-- 📝 Live transcription using OpenAI's Realtime API
-- 🔒 Secure ephemeral token authentication
-- 🎨 Clean, responsive UI with visual feedback
-- ⚡ Low-latency WebRTC connection
+- Real-time audio capture from browser microphone
+- Live transcription using OpenAI's Realtime API
+- Secure ephemeral token authentication
+- Clean, responsive UI with visual feedback
+- Low-latency WebRTC connection
 
 ## Prerequisites
 
