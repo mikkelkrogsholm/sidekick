@@ -706,6 +706,43 @@ app.get("/api/sessions/:id/knowledge/:sourceId", rateLimit, (req, res) => {
   }
 });
 
+// Get knowledge source chunks
+app.get("/api/sessions/:id/knowledge/:sourceId/chunks", rateLimit, (req, res) => {
+  const { id: sessionId, sourceId } = req.params;
+  
+  try {
+    // Validate session exists
+    const session = getSession(sessionId);
+    if (!session) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+    
+    const source = getKnowledgeSource(sourceId);
+    if (!source || source.session_id !== sessionId) {
+      return res.status(404).json({ error: "Knowledge source not found" });
+    }
+    
+    if (source.status !== 'ready') {
+      return res.json({ 
+        chunks: [], 
+        status: source.status,
+        message: source.status === 'processing' ? 'Content is still being processed' : 'Content not available'
+      });
+    }
+    
+    const chunks = getKnowledgeChunks(source.id);
+    res.json({ 
+      chunks,
+      sourceName: source.name,
+      sourceType: source.type,
+      totalChunks: chunks.length
+    });
+  } catch (error) {
+    console.error("Error fetching knowledge chunks:", error);
+    res.status(500).json({ error: "Failed to fetch chunks" });
+  }
+});
+
 // Delete knowledge source
 app.delete("/api/sessions/:id/knowledge/:sourceId", rateLimit, async (req, res) => {
   const { id: sessionId, sourceId } = req.params;

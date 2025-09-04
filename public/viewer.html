@@ -55,17 +55,29 @@
 
                 <!-- Knowledge Sources Section -->
                 <section class="card" style="padding: 16px; display: none;" id="knowledgeSection">
-                    <h3>Knowledge Sources</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                        <h3 style="margin: 0;">Knowledge Sources</h3>
+                        <div id="batchActions" style="display: none; gap: 8px;">
+                            <button id="selectAllBtn" class="button button--secondary" style="padding: 6px 12px; font-size: 0.9rem;">Select All</button>
+                            <button id="batchDeleteBtn" class="button button--danger" style="padding: 6px 12px; font-size: 0.9rem;">Delete Selected (<span id="selectedCount">0</span>)</button>
+                        </div>
+                    </div>
                     
                     <!-- Upload Area -->
                     <div id="uploadArea" class="upload-area" style="border: 2px dashed var(--color-border); border-radius: 8px; padding: 20px; text-align: center; margin: 16px 0; background: var(--color-bg-secondary);">
                         <p style="margin: 0 0 12px 0; color: var(--color-text-muted);">Drag & drop files here, or click to select</p>
-                        <input type="file" id="fileInput" accept=".txt,.md,.pdf" style="display: none;" />
+                        <input type="file" id="fileInput" accept=".txt,.md,.pdf" multiple style="display: none;" />
                         <button id="selectFileBtn" class="button button--primary">Choose Files</button>
                         <p style="margin: 12px 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">Supported: TXT, MD, PDF (max 10MB)</p>
                     </div>
                     
                     <!-- Knowledge List -->
+                    <!-- Upload Progress -->
+                    <div id="uploadProgress" style="display: none; margin: 16px 0; padding: 12px; background: var(--color-bg); border-radius: 8px; border: 1px solid var(--color-border);">
+                        <h4 style="margin: 0 0 12px 0;">Upload Progress</h4>
+                        <div id="uploadProgressList"></div>
+                    </div>
+                    
                     <div id="knowledgeList" style="margin-top: 20px;">
                         <div style="padding: 10px; text-align: center; color: var(--color-text-muted);">
                             No knowledge sources uploaded
@@ -298,28 +310,52 @@
             }
         }
         
-        // Load knowledge sources for a session
-        async function loadKnowledgeSources(sessionId) {
+        // Load knowledge sources for a session with retry logic
+        async function loadKnowledgeSources(sessionId, retryCount = 0) {
             if (!sessionId) return;
             
             try {
                 const response = await fetch(`/api/sessions/${sessionId}/knowledge`);
+                
+                // Handle rate limiting with exponential backoff
+                if (response.status === 429) {
+                    if (retryCount < 3) {
+                        const delay = Math.pow(2, retryCount) * 1000; // 1s, 2s, 4s
+                        console.log(`Rate limited, retrying in ${delay}ms...`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return loadKnowledgeSources(sessionId, retryCount + 1);
+                    }
+                    throw new Error('Too many requests - please wait a moment');
+                }
+                
                 if (!response.ok) throw new Error('Failed to load knowledge sources');
                 
                 const sources = await response.json();
                 displayKnowledgeSources(sources);
             } catch (error) {
                 console.error('Error loading knowledge sources:', error);
-                knowledgeList.innerHTML = '<div style="padding: 10px; color: var(--color-danger);">Failed to load knowledge sources</div>';
+                const message = error.message.includes('Too many requests') 
+                    ? 'Rate limited - please wait a moment'
+                    : 'Failed to load knowledge sources';
+                knowledgeList.innerHTML = `<div style="padding: 10px; color: var(--color-danger);">${message}</div>`;
             }
         }
         
+        // Track selected items
+        let selectedKnowledge = new Set();
+        
         // Display knowledge sources
         function displayKnowledgeSources(sources) {
+            const batchActions = document.getElementById('batchActions');
+            
             if (sources.length === 0) {
                 knowledgeList.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--color-text-muted);">No knowledge sources uploaded</div>';
+                batchActions.style.display = 'none';
                 return;
             }
+            
+            // Show batch actions
+            batchActions.style.display = 'flex';
             
             knowledgeList.innerHTML = '';
             sources.forEach(source => {
@@ -327,11 +363,27 @@
                 item.className = 'row';
                 item.style.padding = '12px';
                 item.style.borderBottom = '1px solid var(--color-border)';
-                item.style.justifyContent = 'space-between';
                 item.style.alignItems = 'center';
+                item.style.gap = '12px';
+                item.dataset.sourceId = source.id;
+                
+                // Checkbox
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.className = 'knowledge-checkbox';
+                checkbox.checked = selectedKnowledge.has(source.id);
+                checkbox.onchange = () => {
+                    if (checkbox.checked) {
+                        selectedKnowledge.add(source.id);
+                    } else {
+                        selectedKnowledge.delete(source.id);
+                    }
+                    updateSelectedCount();
+                };
                 
                 const infoDiv = document.createElement('div');
                 infoDiv.style.flex = '1';
+                infoDiv.style.cursor = source.status === 'ready' ? 'pointer' : 'default';
                 
                 const statusBadge = source.status === 'ready' 
                     ? '<span style="background: var(--color-success); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem;">Ready</span>'
@@ -351,25 +403,236 @@
                     </div>
                 `;
                 
+                // Add click handler to view content
+                if (source.status === 'ready') {
+                    infoDiv.onclick = () => viewKnowledgeSource(sessionFilter.value, source.id, source.name);
+                    infoDiv.title = 'Click to view content';
+                }
+                
+                const actionsDiv = document.createElement('div');
+                actionsDiv.style.display = 'flex';
+                actionsDiv.style.gap = '8px';
+                
+                if (source.status === 'ready') {
+                    const viewBtn = document.createElement('button');
+                    viewBtn.className = 'button button--primary';
+                    viewBtn.style.padding = '4px 8px';
+                    viewBtn.style.fontSize = '0.85rem';
+                    viewBtn.textContent = 'View';
+                    viewBtn.onclick = () => viewKnowledgeSource(sessionFilter.value, source.id, source.name);
+                    actionsDiv.appendChild(viewBtn);
+                }
+                
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'button button--danger';
                 deleteBtn.style.padding = '4px 8px';
                 deleteBtn.style.fontSize = '0.85rem';
                 deleteBtn.textContent = 'Delete';
                 deleteBtn.onclick = () => deleteKnowledgeSource(sessionFilter.value, source.id);
+                actionsDiv.appendChild(deleteBtn);
                 
+                item.appendChild(checkbox);
                 item.appendChild(infoDiv);
-                item.appendChild(deleteBtn);
+                item.appendChild(actionsDiv);
                 knowledgeList.appendChild(item);
             });
+            
+            updateSelectedCount();
         }
         
-        // Upload file
-        async function uploadFile(file) {
+        // Update selected count display
+        function updateSelectedCount() {
+            const countSpan = document.getElementById('selectedCount');
+            countSpan.textContent = selectedKnowledge.size;
+            
+            const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+            batchDeleteBtn.disabled = selectedKnowledge.size === 0;
+        }
+        
+        // View knowledge source content
+        async function viewKnowledgeSource(sessionId, sourceId, sourceName) {
+            try {
+                // Fetch chunks directly from the chunks endpoint
+                const response = await fetch(`/api/sessions/${sessionId}/knowledge/${sourceId}/chunks`);
+                if (!response.ok) throw new Error('Failed to load knowledge chunks');
+                
+                const data = await response.json();
+                
+                // Create modal to display content
+                const modal = document.createElement('div');
+                modal.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.5);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 1000;
+                `;
+                
+                const modalContent = document.createElement('div');
+                modalContent.style.cssText = `
+                    background: var(--color-bg);
+                    border-radius: var(--radius-l);
+                    padding: 24px;
+                    max-width: 80%;
+                    max-height: 80%;
+                    overflow: auto;
+                    box-shadow: var(--shadow-xl);
+                `;
+                
+                const header = document.createElement('div');
+                header.style.cssText = `
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 16px;
+                    padding-bottom: 16px;
+                    border-bottom: 1px solid var(--color-border);
+                `;
+                
+                header.innerHTML = `
+                    <h3 style="margin: 0;">${escapeHtml(sourceName)}</h3>
+                    <button class="button button--secondary" style="padding: 4px 8px;">Close</button>
+                `;
+                
+                const closeBtn = header.querySelector('button');
+                closeBtn.onclick = () => document.body.removeChild(modal);
+                
+                const content = document.createElement('div');
+                content.style.cssText = `
+                    background: var(--color-bg-secondary);
+                    padding: 16px;
+                    border-radius: var(--radius-m);
+                    max-height: 60vh;
+                    overflow: auto;
+                `;
+                
+                // Get chunks from the response
+                const chunks = data.chunks || [];
+                
+                if (chunks.length > 0) {
+                    content.innerHTML = `
+                        <div style="margin-bottom: 12px; color: var(--color-text-muted); font-size: 0.9rem;">
+                            Total chunks: ${chunks.length}
+                        </div>
+                        ${chunks.map((chunk, index) => `
+                            <div style="margin-bottom: 16px; padding: 12px; background: var(--color-bg); border-radius: var(--radius-s);">
+                                <div style="font-weight: 600; margin-bottom: 8px; color: var(--color-primary);">Chunk ${index + 1}</div>
+                                <div style="white-space: pre-wrap; font-family: monospace; font-size: 0.9rem; line-height: 1.5;">${escapeHtml(chunk.content || chunk.text || chunk)}</div>
+                            </div>
+                        `).join('')}
+                    `;
+                } else if (data.status === 'processing' || data.status === 'queued') {
+                    content.innerHTML = '<div style="color: var(--color-warning);">Content is still being processed. Please try again in a moment.</div>';
+                } else if (data.message) {
+                    content.innerHTML = `<div style="color: var(--color-text-muted);">${escapeHtml(data.message)}</div>`;
+                } else {
+                    content.innerHTML = '<div style="color: var(--color-text-muted);">No content available.</div>';
+                }
+                
+                modalContent.appendChild(header);
+                modalContent.appendChild(content);
+                modal.appendChild(modalContent);
+                
+                // Close modal on backdrop click
+                modal.onclick = (e) => {
+                    if (e.target === modal) {
+                        document.body.removeChild(modal);
+                    }
+                };
+                
+                document.body.appendChild(modal);
+            } catch (error) {
+                console.error('Error viewing knowledge source:', error);
+                alert('Failed to load knowledge source content');
+            }
+        }
+        
+        // Batch delete knowledge sources
+        async function batchDeleteKnowledge() {
+            if (selectedKnowledge.size === 0) return;
+            
+            const sessionId = sessionFilter.value;
+            if (!sessionId) return;
+            
+            const count = selectedKnowledge.size;
+            if (!confirm(`Delete ${count} selected knowledge source${count > 1 ? 's' : ''}? This cannot be undone.`)) {
+                return;
+            }
+            
+            const errors = [];
+            
+            // Delete each selected source
+            for (const sourceId of selectedKnowledge) {
+                try {
+                    const response = await fetch(`/api/sessions/${sessionId}/knowledge/${sourceId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (!response.ok) {
+                        errors.push(sourceId);
+                    }
+                    
+                    // Small delay between deletions to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                } catch (error) {
+                    console.error('Error deleting source:', sourceId, error);
+                    errors.push(sourceId);
+                }
+            }
+            
+            // Clear selection
+            selectedKnowledge.clear();
+            
+            // Show errors if any
+            if (errors.length > 0) {
+                alert(`Failed to delete ${errors.length} source(s)`);
+            }
+            
+            // Reload knowledge sources
+            await loadKnowledgeSources(sessionId);
+        }
+        
+        // Select/deselect all
+        function toggleSelectAll() {
+            const checkboxes = document.querySelectorAll('.knowledge-checkbox');
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = !allChecked;
+                const sourceId = checkbox.closest('[data-source-id]').dataset.sourceId;
+                if (!allChecked) {
+                    selectedKnowledge.add(sourceId);
+                } else {
+                    selectedKnowledge.delete(sourceId);
+                }
+            });
+            
+            selectAllBtn.textContent = allChecked ? 'Select All' : 'Select None';
+            updateSelectedCount();
+        }
+        
+        // Track upload progress
+        let uploadQueue = [];
+        let uploadErrors = [];
+        
+        // Upload file with progress tracking
+        async function uploadFile(file, updateProgress = true) {
             const sessionId = sessionFilter.value;
             if (!sessionId) {
                 alert('Please select a session first');
-                return;
+                return { success: false, error: 'No session selected' };
+            }
+            
+            const fileId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            
+            if (updateProgress) {
+                updateUploadProgress(fileId, file.name, 'uploading');
             }
             
             const formData = new FormData();
@@ -396,15 +659,102 @@
                 const result = await response.json();
                 console.log('Upload successful:', result);
                 
-                // Reload knowledge sources
-                await loadKnowledgeSources(sessionId);
+                if (updateProgress) {
+                    updateUploadProgress(fileId, file.name, 'completed');
+                }
                 
                 // Start polling for status updates
                 pollKnowledgeStatus(sessionId, result.sourceId);
+                
+                return { success: true, result };
             } catch (error) {
                 console.error('Upload error:', error);
-                alert('Upload failed: ' + error.message);
+                if (updateProgress) {
+                    updateUploadProgress(fileId, file.name, 'failed', error.message);
+                }
+                return { success: false, error: error.message };
             }
+        }
+        
+        // Upload multiple files with sequential processing to avoid rate limiting
+        async function uploadFiles(files) {
+            const sessionId = sessionFilter.value;
+            if (!sessionId) {
+                alert('Please select a session first');
+                return;
+            }
+            
+            uploadQueue = [];
+            uploadErrors = [];
+            
+            // Show upload progress UI
+            const progressDiv = document.getElementById('uploadProgress');
+            const progressList = document.getElementById('uploadProgressList');
+            progressDiv.style.display = 'block';
+            progressList.innerHTML = '';
+            
+            // Process files sequentially with a small delay to avoid rate limiting
+            for (const file of Array.from(files)) {
+                const result = await uploadFile(file, true);
+                if (!result.success) {
+                    uploadErrors.push({ file: file.name, error: result.error });
+                }
+                // Add a small delay between uploads to avoid rate limiting
+                if (files.length > 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+            
+            // Reload knowledge sources with a delay
+            setTimeout(async () => {
+                await loadKnowledgeSources(sessionId);
+            }, 1000);
+            
+            // Show any errors
+            if (uploadErrors.length > 0) {
+                const errorMessages = uploadErrors.map(e => `${e.file}: ${e.error}`).join('\n');
+                alert(`Some files failed to upload:\n\n${errorMessages}`);
+            }
+            
+            // Hide progress UI after a delay
+            setTimeout(() => {
+                progressDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Update upload progress UI
+        function updateUploadProgress(fileId, fileName, status, error = null) {
+            const progressList = document.getElementById('uploadProgressList');
+            let item = document.getElementById(`upload-${fileId}`);
+            
+            if (!item) {
+                item = document.createElement('div');
+                item.id = `upload-${fileId}`;
+                item.style.padding = '8px';
+                item.style.borderBottom = '1px solid var(--color-border)';
+                progressList.appendChild(item);
+            }
+            
+            let statusBadge = '';
+            switch(status) {
+                case 'uploading':
+                    statusBadge = '<span style="background: var(--color-warning); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem;">Uploading...</span>';
+                    break;
+                case 'completed':
+                    statusBadge = '<span style="background: var(--color-success); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem;">Completed</span>';
+                    break;
+                case 'failed':
+                    statusBadge = '<span style="background: var(--color-danger); color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.85rem;">Failed</span>';
+                    break;
+            }
+            
+            item.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <span>${escapeHtml(fileName)}</span>
+                    ${statusBadge}
+                </div>
+                ${error ? `<div style="color: var(--color-danger); font-size: 0.85rem; margin-top: 4px;">${escapeHtml(error)}</div>` : ''}
+            `;
         }
         
         // Poll for knowledge source status
@@ -456,9 +806,20 @@
         selectFileBtn.onclick = () => fileInput.click();
         
         fileInput.onchange = (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                uploadFile(file);
+            const files = e.target.files;
+            if (files && files.length > 0) {
+                if (files.length === 1) {
+                    // Single file - use original behavior
+                    uploadFile(files[0], false).then(() => {
+                        // Add delay before reloading to avoid rate limiting
+                        setTimeout(() => {
+                            loadKnowledgeSources(sessionFilter.value);
+                        }, 1000);
+                    });
+                } else {
+                    // Multiple files - use batch upload
+                    uploadFiles(files);
+                }
                 fileInput.value = ''; // Reset input
             }
         };
@@ -481,9 +842,20 @@
             uploadArea.style.borderColor = 'var(--color-border)';
             uploadArea.style.background = 'var(--color-bg-secondary)';
             
-            const file = e.dataTransfer.files[0];
-            if (file) {
-                uploadFile(file);
+            const files = e.dataTransfer.files;
+            if (files && files.length > 0) {
+                if (files.length === 1) {
+                    // Single file - use original behavior
+                    uploadFile(files[0], false).then(() => {
+                        // Add delay before reloading to avoid rate limiting
+                        setTimeout(() => {
+                            loadKnowledgeSources(sessionFilter.value);
+                        }, 1000);
+                    });
+                } else {
+                    // Multiple files - use batch upload
+                    uploadFiles(files);
+                }
             }
         });
         
@@ -567,8 +939,21 @@
         sessionFilter.onchange = () => {
             loadEmbeddings();
             updateKnowledgeSection();
+            selectedKnowledge.clear(); // Clear selection when changing sessions
         };
         searchBtn.onclick = searchEmbeddings;
+        
+        // Batch action buttons
+        const selectAllBtn = document.getElementById('selectAllBtn');
+        const batchDeleteBtn = document.getElementById('batchDeleteBtn');
+        
+        if (selectAllBtn) {
+            selectAllBtn.onclick = toggleSelectAll;
+        }
+        
+        if (batchDeleteBtn) {
+            batchDeleteBtn.onclick = batchDeleteKnowledge;
+        }
         
         searchQuery.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') searchEmbeddings();

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-file Upload Test</title>
+</head>
+<body>
+    <h1>Multi-file Upload Test</h1>
+    <p>Instructions:</p>
+    <ol>
+        <li>Open <a href="http://localhost:3008/viewer.html" target="_blank">http://localhost:3008/viewer.html</a></li>
+        <li>Select a session from the dropdown (or create one in the dashboard first)</li>
+        <li>In the "Knowledge Sources" section, test the following:</li>
+        <ul>
+            <li>Click "Choose Files" and select multiple files (TXT, MD, or PDF)</li>
+            <li>Watch the upload progress UI show status for each file</li>
+            <li>Drag and drop multiple files into the upload area</li>
+            <li>Verify that all files appear in the knowledge sources list</li>
+            <li>Test with files that exceed the 10MB limit to verify error handling</li>
+        </ul>
+    </ol>
+    
+    <h2>Test Cases</h2>
+    <ul>
+        <li>✅ Multiple file selection via "Choose Files" button</li>
+        <li>✅ Multiple file drag-and-drop</li>
+        <li>✅ Upload progress UI shows status for each file</li>
+        <li>✅ Individual file errors don't block other uploads</li>
+        <li>✅ Files appear in knowledge sources list after upload</li>
+        <li>✅ Error messages for oversized files are displayed</li>
+    </ul>
+    
+    <h2>Implementation Summary</h2>
+    <p>The following changes were made to enable multi-file upload:</p>
+    <ul>
+        <li>Added 'multiple' attribute to file input element</li>
+        <li>Updated file input handler to process FileList</li>
+        <li>Updated drag-and-drop handler to process all dropped files</li>
+        <li>Added upload progress UI with per-file status tracking</li>
+        <li>Enhanced error handling to collect and display all errors</li>
+        <li>Maintained backward compatibility with single file uploads</li>
+    </ul>
+</body>
+</html>

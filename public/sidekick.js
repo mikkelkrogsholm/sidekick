@@ -325,8 +325,12 @@ function buildContext(latest, hits) {
 }
 
 async function buildRagContextFromQuery(question, sessionId) {
-  if (!question?.trim() || !sessionId) return "";
+  if (!question?.trim() || !sessionId) {
+    console.log("No question or sessionId for RAG context");
+    return "";
+  }
   try {
+    console.log(`Building RAG context for question: "${question}" in session: ${sessionId}`);
     const result = await postJSON(`/api/search`, { 
       query: question, 
       limit: 6, 
@@ -336,12 +340,19 @@ async function buildRagContextFromQuery(question, sessionId) {
       k_knowledge: 3
     });
     const hits = result?.results || [];
+    console.log(`Found ${hits.length} results for RAG context:`, hits.map(h => ({
+      source: h.source,
+      name: h.source_name || h.attribution?.sourceName,
+      preview: h.content?.substring(0, 100)
+    })));
     if (!hits.length) return "";
     const lines = hits.map((h, i) => {
       const src = h.source === 'knowledge' ? `(knowledge: ${h.attribution?.sourceName ?? 'source'} #${h.attribution?.chunkIndex ?? '?'})` : '(transcript)';
       return `${i + 1}. ${h.content} ${src}`;
     }).join('\n');
-    return `User question: ${question}\n\nRelevant material:\n${lines}`;
+    const context = `User question: ${question}\n\nRelevant material:\n${lines}`;
+    console.log("RAG context built successfully, length:", context.length);
+    return context;
   } catch (e) {
     console.error('RAG context error:', e);
     return "";
@@ -350,10 +361,13 @@ async function buildRagContextFromQuery(question, sessionId) {
 
 async function updateInstructionsWithContext(contextText) {
   const temp = window.Settings?.get("sk_temp", 0.6) ?? 0.6;
+  const instructions = basePrompt + (contextText ? `\n\nContext:\n${contextText}` : "");
+  console.log("Updating instructions with context. Base prompt:", basePrompt);
+  console.log("Context added:", contextText ? `Yes (${contextText.length} chars)` : "No (clearing context)");
   sendEvent({
     type: "session.update",
     session: {
-      instructions: basePrompt + (contextText ? `\n\nContext:\n${contextText}` : ""),
+      instructions: instructions,
       temperature: temp
     }
   });

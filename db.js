@@ -51,6 +51,32 @@ try {
       updated_at text not null,
       total_transcripts integer default 0
     );
+    
+    -- New tables for knowledge management
+    create table if not exists knowledge_sources (
+      id text primary key,
+      session_id text not null,
+      name text not null,
+      type text not null,
+      file_path text not null,
+      status text not null default 'queued',
+      error text,
+      metadata_json text,
+      created_at text not null
+    );
+    
+    create virtual table if not exists knowledge_chunks using vec0(
+      source_id text,
+      session_id text partition key,
+      chunk_index text,
+      content_hash text,
+      embedding float[3072] distance_metric=cosine,
+      +content text,
+      created_at text
+    );
+    
+    create index if not exists idx_knowledge_sources_session on knowledge_sources(session_id);
+    create index if not exists idx_knowledge_sources_status on knowledge_sources(status);
   `);
 } catch (err) {
   console.error("Error creating database tables:", err);
@@ -64,8 +90,24 @@ try {
         updated_at text not null,
         total_transcripts integer default 0
       );
+      
+      -- New tables for knowledge management (non-vector version)
+      create table if not exists knowledge_sources (
+        id text primary key,
+        session_id text not null,
+        name text not null,
+        type text not null,
+        file_path text not null,
+        status text not null default 'queued',
+        error text,
+        metadata_json text,
+        created_at text not null
+      );
+      
+      create index if not exists idx_knowledge_sources_session on knowledge_sources(session_id);
+      create index if not exists idx_knowledge_sources_status on knowledge_sources(status);
     `);
-    console.log("Created sessions table (vector support disabled)");
+    console.log("Created sessions and knowledge_sources tables (vector support disabled)");
   } catch (fallbackErr) {
     console.error("Failed to create database tables:", fallbackErr);
     process.exit(1);
@@ -223,6 +265,153 @@ export function recalculateTranscriptCount(sessionId) {
   } catch (err) {
     console.error("Error recalculating transcript count:", err);
     throw err;
+  }
+}
+
+// Knowledge management functions
+export function createKnowledgeSource({ sessionId, name, type, filePath }) {
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const stmt = db.prepare(`
+    insert into knowledge_sources (id, session_id, name, type, file_path, status, created_at)
+    values (?, ?, ?, ?, ?, 'queued', ?)
+  `);
+  stmt.run(id, sessionId, name, type, filePath, now);
+  return { id, sessionId, name, type, filePath, status: 'queued', created_at: now };
+}
+
+export function getKnowledgeSources(sessionId) {
+  const stmt = db.prepare(`
+    select * from knowledge_sources
+    where session_id = ?
+    order by created_at desc
+  `);
+  return stmt.all(sessionId);
+}
+
+export function getKnowledgeSource(id) {
+  const stmt = db.prepare(`
+    select * from knowledge_sources where id = ?
+  `);
+  return stmt.get(id);
+}
+
+export function updateKnowledgeSourceStatus(id, status, error = null, metadata = null) {
+  const stmt = db.prepare(`
+    update knowledge_sources 
+    set status = ?, error = ?, metadata_json = ?
+    where id = ?
+  `);
+  const metadataJson = metadata ? JSON.stringify(metadata) : null;
+  stmt.run(status, error, metadataJson, id);
+}
+
+export function deleteKnowledgeSource(sourceId) {
+  try {
+    // Delete chunks first, then the source
+    const deleteChunks = db.prepare(`
+      delete from knowledge_chunks where source_id = ?
+    `);
+    const deleteSource = db.prepare(`
+      delete from knowledge_sources where id = ?
+    `);
+    
+    const transaction = db.transaction(() => {
+      const chunksResult = deleteChunks.run(sourceId);
+      const sourceResult = deleteSource.run(sourceId);
+      return {
+        chunksDeleted: chunksResult.changes,
+        sourceDeleted: sourceResult.changes > 0
+      };
+    });
+    
+    return transaction();
+  } catch (err) {
+    console.error("Error deleting knowledge source:", err);
+    throw err;
+  }
+}
+
+export function insertKnowledgeChunk({ sourceId, sessionId, chunkIndex, content, contentHash, embedding }) {
+  try {
+    const vector = new Float32Array(embedding);
+    const now = new Date().toISOString();
+    const stmt = db.prepare(`
+      insert into knowledge_chunks (source_id, session_id, chunk_index, content_hash, embedding, content, created_at)
+      values (?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(sourceId, sessionId, String(chunkIndex), contentHash, vector, content, now);
+  } catch (err) {
+    console.error("Error inserting knowledge chunk:", err);
+    throw err;
+  }
+}
+
+export function getKnowledgeChunks(sourceId) {
+  const stmt = db.prepare(`
+    select rowid, source_id, session_id, chunk_index, content, content_hash, created_at
+    from knowledge_chunks
+    where source_id = ?
+    order by chunk_index
+  `);
+  return stmt.all(sourceId);
+}
+
+export function getKnowledgeChunkCount(sourceId) {
+  const stmt = db.prepare(`
+    select count(*) as count from knowledge_chunks where source_id = ?
+  `);
+  return stmt.get(sourceId).count;
+}
+
+// Search similar knowledge chunks
+export function searchSimilarKnowledge(queryEmbedding, limit = 5, sessionId = null) {
+  try {
+    const vector = new Float32Array(queryEmbedding);
+    
+    if (sessionId) {
+      const stmt = db.prepare(`
+        select 
+          kc.rowid, 
+          kc.source_id, 
+          kc.session_id, 
+          kc.chunk_index,
+          kc.content, 
+          kc.distance,
+          ks.name as source_name,
+          ks.type as source_type
+        from knowledge_chunks kc
+        join knowledge_sources ks on kc.source_id = ks.id
+        where kc.session_id = ? 
+          and kc.embedding match ? 
+          and k = ?
+          and ks.status = 'ready'
+        order by distance
+      `);
+      return stmt.all(sessionId, vector, limit);
+    } else {
+      const stmt = db.prepare(`
+        select 
+          kc.rowid, 
+          kc.source_id, 
+          kc.session_id, 
+          kc.chunk_index,
+          kc.content, 
+          kc.distance,
+          ks.name as source_name,
+          ks.type as source_type
+        from knowledge_chunks kc
+        join knowledge_sources ks on kc.source_id = ks.id
+        where kc.embedding match ? 
+          and k = ?
+          and ks.status = 'ready'
+        order by distance
+      `);
+      return stmt.all(vector, limit);
+    }
+  } catch (err) {
+    console.error("Knowledge search not available:", err);
+    return [];
   }
 }
 
