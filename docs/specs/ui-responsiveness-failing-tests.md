@@ -15,6 +15,7 @@ This PR adds Playwright e2e tests that currently FAIL, documenting the expected 
 - [ ] Topbar groups (brand, nav, status) do not overlap at 375px width.
 - [ ] Secretary Start/Stop controls stack vertically at small widths (single column at ≤ 400px) to avoid overflow.
 - [ ] Viewer page at 375px width has no horizontal overflow.
+ - [ ] Start/Stop buttons remain fully within the Secretary card bounds at 375px.
 
 ## Out of Scope
 
@@ -41,4 +42,3 @@ npx playwright test -c e2e/playwright.config.js
 ```
 
 The config starts the local server with a dummy `OPENAI_API_KEY` and an isolated SQLite DB file.
-

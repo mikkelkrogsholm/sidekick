@@ -61,6 +61,39 @@ test.describe('UI Responsiveness & Layout', () => {
     expect(gridCols.replace(/\s+/g, '')).toMatch(/^1fr$/); // expect a single column grid
   });
 
+  test('Index: Start/Stop buttons stay within card bounds at mobile width', async ({ page }) => {
+    await page.goto('/');
+
+    const card = page.locator('#secretaryPanel.card');
+    const startBtn = page.locator('#startBtn');
+    const stopBtn = page.locator('#stopBtn');
+
+    await expect(card).toBeVisible();
+    await expect(startBtn).toBeVisible();
+    await expect(stopBtn).toBeVisible();
+
+    const [cb, sb, tb] = await Promise.all([
+      card.boundingBox(),
+      startBtn.boundingBox(),
+      stopBtn.boundingBox(),
+    ]);
+
+    expect(cb, 'Card bbox not found').not.toBeNull();
+    expect(sb, 'Start button bbox not found').not.toBeNull();
+    expect(tb, 'Stop button bbox not found').not.toBeNull();
+
+    const minLeft = Math.min(sb.left, tb.left);
+    const maxRight = Math.max(sb.right, tb.right);
+    const minTop = Math.min(sb.top, tb.top);
+    const maxBottom = Math.max(sb.bottom, tb.bottom);
+
+    // Expect the union of both buttons to be fully inside the card
+    expect(minLeft).toBeGreaterThanOrEqual(cb.left);
+    expect(maxRight).toBeLessThanOrEqual(cb.right);
+    expect(minTop).toBeGreaterThanOrEqual(cb.top);
+    expect(maxBottom).toBeLessThanOrEqual(cb.bottom);
+  });
+
   test('Viewer: no horizontal overflow at mobile width (toolbar and cards)', async ({ page }) => {
     await page.goto('/viewer.html');
     const { scrollWidth, innerWidth } = await page.evaluate(() => ({
@@ -71,4 +104,3 @@ test.describe('UI Responsiveness & Layout', () => {
     expect(scrollWidth, 'Horizontal overflow detected on viewer at 375px width').toBeLessThanOrEqual(innerWidth);
   });
 });
-
