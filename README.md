@@ -20,31 +20,45 @@ A simple web application that uses OpenAI's Realtime API to transcribe live audi
 1. **Clone or download this project**
 
 2. **Install dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Configure your OpenAI API key:**
+
    ```bash
    cp .env.example .env
    ```
+
    Edit `.env` and add your OpenAI API key:
+
    ```
    OPENAI_API_KEY=sk-your-api-key-here
    ```
 
 4. **Start the server:**
+
    ```bash
    npm start
    ```
-   
+
    Or for development with auto-reload:
+
    ```bash
    npm run dev
    ```
 
 5. **Open your browser:**
    Navigate to `http://localhost:3000`
+
+## Tests
+
+- Run all tests: `npm test`
+- Watch mode: `npm run test:watch`
+- Coverage: `npm run test:coverage`
+
+Tests live under `tests/**/*.test.js` and run in a `jsdom` environment with Babel. Coverage is collected for `public/**/*.js`, `server.js`, and `db.js` (excluding `public/settings.js`).
 
 ## How to Use
 
@@ -59,9 +73,12 @@ A simple web application that uses OpenAI's Realtime API to transcribe live audi
 - **Frontend (public/index.html):** WebRTC client that streams audio and receives transcriptions
 - **Security:** API keys never exposed to browser; uses short-lived tokens instead
 
+For broader goals and constraints, see `docs/PROJECT_SCOPE.md`. For contribution rules and CI, see `CONTRIBUTING.md`.
+
 ## Configuration
 
 The app uses OpenAI's Realtime API with:
+
 - **Model:** gpt-4o-realtime-preview
 - **Mode:** Input transcription only (no TTS or agent responses)
 - **Audio:** Direct microphone streaming via WebRTC
