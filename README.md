@@ -106,6 +106,32 @@ Tests live under `tests/**/*.test.js` (jsdom + Babel). Coverage is collected for
 - Ephemeral tokens are minted server‑side at `/ephemeral-token`
 - CORS enabled for browser access; basic rate limiting applied server‑side
 
+## Dual‑Agent Workflow (CodeX + Claude)
+
+This repo uses a two‑role workflow to ship changes quickly and safely:
+
+- Planner (CodeX): defines the smallest next step as failing tests.
+- Implementer (Claude): writes the minimal code to make those tests pass.
+
+Flow: Planner opens PR with failing tests → Implementer commits until CI is green → squash‑merge.
+
+- Planner quickstart
+  - `git checkout -b feat/<slug>`
+  - Add failing tests only under `tests/`
+  - `npm test` (ensure failures represent the spec)
+  - Open a PR and fill the PR template (Context, Acceptance criteria, Out of scope, Risks)
+
+- Implementer quickstart
+  - Checkout the Planner’s branch
+  - `npm install && npm test`
+  - Implement the minimal changes to go green
+  - Do not edit acceptance criteria or remove tests
+  - If spec is wrong/unsafe: comment with `CHANGE_REQUEST: <reason + proposed fix>`
+
+CI runs lint, format check, and tests on PRs; `main` is protected and merged via squash only.
+
+See: `AGENTS.md` (Planner), `CLAUDE.md` (Implementer), and `CONTRIBUTING.md` (rules, CI, tools). Scope/goals live in `docs/PROJECT_SCOPE.md`.
+
 ## Troubleshooting
 
 - "Failed to create session": verify `OPENAI_API_KEY` and Realtime API access
