@@ -7,3 +7,7 @@ dist/
 build/
 data/uploads/*
 !data/uploads/.gitkeep
+test-results/
+playwright-report/
+.playwright-mcp/
+data/e2e-playwright.db
