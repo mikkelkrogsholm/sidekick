@@ -26,7 +26,7 @@ export default [
           varsIgnorePattern: "^_",
           caughtErrors: "all",
           caughtErrorsIgnorePattern: "^_",
-        }
+        },
       ],
       "no-console": "off",
       "no-undef": "off",
