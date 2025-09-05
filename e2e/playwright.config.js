@@ -3,7 +3,8 @@
 import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './',
+  testMatch: '**/*.spec.js',
   timeout: 30_000,
   use: {
     baseURL: 'http://localhost:3000',
@@ -11,7 +12,7 @@ export default defineConfig({
     navigationTimeout: 15_000,
   },
   webServer: {
-    command: 'node server.js',
+    command: 'node ../server.js',
     port: 3000,
     reuseExistingServer: true,
     env: {

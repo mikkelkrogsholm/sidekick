@@ -9,13 +9,11 @@ Screenshots show layout issues:
 
 This PR adds Playwright e2e tests that currently FAIL, documenting the expected responsive behavior to be implemented. No production code is included.
 
-## Acceptance Criteria
+## Acceptance Criteria (CI)
 
-- [ ] Index at 375px width has no horizontal overflow (no x-scroll). [CI]
-- [ ] Secretary Start/Stop controls stack vertically at ≤ 400px. [CI]
-- [ ] Viewer page at 375px width has no horizontal overflow. [CI]
-- [ ] Topbar groups (brand, nav, status) do not overlap at 375px width. [MCP]
-- [ ] Start/Stop buttons remain fully within the Secretary card bounds at 375px. [MCP]
+- [ ] Index at 375px width has no horizontal overflow (no x-scroll).
+- [ ] Secretary Start/Stop controls stack vertically at ≤ 400px.
+- [ ] Viewer page at 375px width has no horizontal overflow.
 
 ## Out of Scope
 
@@ -38,8 +36,7 @@ This PR adds Playwright e2e tests that currently FAIL, documenting the expected 
 ## How to Run (locally)
 
 ```
-npx playwright test -c e2e/playwright.config.js          # CI set (stable)
-npx playwright test -c e2e/playwright.config.js e2e-mcp  # MCP-only checks
+npx playwright test -c e2e/playwright.config.js
 ```
 
 The config starts the local server with a dummy `OPENAI_API_KEY` and an isolated SQLite DB file.

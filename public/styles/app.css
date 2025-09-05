@@ -615,3 +615,67 @@
 /* Align input + button rows nicely */
 #sidekickPanel .field .row { align-items: stretch; }
 #sidekickPanel .field .row .input { height: 40px; }
+
+/* ========== RESPONSIVE FIXES FOR MOBILE (375px) ========== */
+
+/* Fix control buttons to stack vertically on small screens */
+@media (max-width: 400px) {
+  .control-buttons {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Fix topbar overlap at mobile widths */
+@media (max-width: 375px) {
+  .topbar__inner {
+    flex-direction: column;
+    height: auto;
+    padding: var(--space-3) 0;
+    gap: var(--space-3);
+  }
+  
+  .brand {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--space-1);
+  }
+  
+  .nav-links {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-2);
+  }
+  
+  .nav-link {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-s);
+  }
+  
+  .topbar__inner .row {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  /* Ensure no horizontal overflow */
+  .container {
+    padding-inline: var(--space-3);
+  }
+}
+
+/* Fix viewer toolbar at mobile widths */
+@media (max-width: 375px) {
+  .viewer .toolbar {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-2);
+  }
+  
+  /* Stack filter controls vertically */
+  .viewer .row {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .viewer .row > * {
+    width: 100%;
+  }
+}
