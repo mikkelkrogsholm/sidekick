@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feat/**, fix/**, chore/**]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: "npm"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Lint
+        run: npm run -s lint
+
+      - name: Format check
+        run: npm run -s format:check
+
+      - name: Test
+        env:
+          OPENAI_API_KEY: "sk-dummy-ci-key"
+        run: npm test --silent

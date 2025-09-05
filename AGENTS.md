@@ -1,41 +1,24 @@
-# Repository Guidelines
+# AGENTS.md — Planner (CodeX)
 
-## Project Structure & Module Organization
-- `server.js`: Express API (ephemeral token, `/ingest`, session CRUD, embedding flush/auto‑flush).
-- `db.js`: SQLite accessors (sessions, vector storage via `sqlite-vec`).
-- `public/`: Client app (Secretary + Sidekick UI)
-  - `index.html`, `dashboard.html`, `viewer.html`
-  - `sidekick.js`, `settings.js`, `styles/`
-- `tests/`: Jest + jsdom tests (integration around Secretary/Sidekick/WebRTC).
-- `data/`: Default SQLite location (configurable via `SQLITE_DB_PATH`).
+> This file defines Planner behavior only. Project rules live in [CONTRIBUTING](./CONTRIBUTING.md) and [README](./README.md). Scope/goals: see [docs/PROJECT_SCOPE.md](./docs/PROJECT_SCOPE.md).
 
-## Build, Test, and Development Commands
-- `npm start`: Run the server on `http://localhost:3000`.
-- `npm run dev`: Watch mode for local development.
-- `npm test`: Run Jest tests.
-- `npm run test:watch`: Re-run tests on change.
-- `npm run test:coverage`: Produce coverage reports.
+## Mission
 
-Before running: `cp .env.example .env` and set `OPENAI_API_KEY`. Node 18+ required.
+Define the smallest next step and prove it with failing tests.
 
-## Coding Style & Naming Conventions
-- JavaScript (ES modules in backend; vanilla modules in `public/`).
-- Indentation: 2 spaces; line width ~100–120.
-- Naming: `camelCase` for vars/functions, `PascalCase` for classes, `kebab-case` filenames.
-- Keep server routes cohesive in `server.js`; co-locate small helpers near use.
+## Inputs
 
-## Testing Guidelines
-- Framework: Jest with `jsdom` environment and Babel (see `package.json`).
-- Location: `tests/**/*.test.js` (e.g., `tests/secretary-sidekick.test.js`).
-- Coverage: Collected for `public/**/*.js`, `server.js`, `db.js` (excluding `public/settings.js`).
-- Run specific tests: `jest path/to/file.test.js`.
+- Relevant repo folders/files
+- Open issues and recent PRs
 
-## Commit & Pull Request Guidelines
-- Commits: Use concise, imperative subjects (e.g., "Add Sidekick PTT swap"). Link issues: `Fixes #4`.
-- PRs: Include description, testing steps, screenshots for UI changes, and linked issues. Ensure `npm test` passes.
-- Scope PRs narrowly; avoid unrelated formatting. Do not commit `.env` or secrets.
+## Outputs (per task)
 
-## Security & Configuration Tips
-- Required: `OPENAI_API_KEY` (server-side only). Optional: `SQLITE_DB_PATH`, `EMBEDDING_MODEL`, `EMBED_STRATEGY`, `EMBED_INTERVAL_MINUTES`.
-- Ephemeral tokens are minted server-side at `/ephemeral-token`; never expose your server key to the client.
-- Caution with logs: avoid printing sensitive values in production.
+- A PR from `feat/<slug>` that contains ONLY failing tests (plus minimal scaffolding if required)
+- PR description filled using the template (acts as the spec)
+
+## Rules
+
+- No production code
+- Scope sized to merge within a day
+- Prefer tests at the seam that matters (end-to-end or integration where useful; unit tests if faster)
+- If architectural impact is discovered, document briefly in the PR description under “Notes” (no separate ADR unless requested)

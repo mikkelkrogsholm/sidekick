@@ -58,7 +58,7 @@ class MockRTCPeerConnection {
     return Promise.resolve();
   }
 
-  addTrack(track, stream) {
+  addTrack(track, _stream) {
     const sender = new MockRTCRtpSender(track);
     this.senders.push(sender);
     return sender;
@@ -298,7 +298,7 @@ describe('Secretary-Sidekick Integration Tests (Issue #9)', () => {
 
     test('Should activate Sidekick PTT and verify Secretary pauses', async () => {
       let secretaryPaused = false;
-      let sidekickActive = false;
+      let _sidekickActive = false;
 
       // Mock Secretary
       global.window.Secretary = {
@@ -322,7 +322,7 @@ describe('Secretary-Sidekick Integration Tests (Issue #9)', () => {
       if (pttBtn) {
         // PTT mousedown
         pttBtn.dispatchEvent(new dom.window.Event('mousedown'));
-        sidekickActive = true;
+        _sidekickActive = true;
 
         // Verify Secretary pauses
         if (global.window.Settings.get('sk_autopause', true)) {

@@ -1,79 +1,141 @@
-# Live Audio Transcription with OpenAI Realtime API
+# Secretary + Sidekick: Realtime Transcription, PTT Assistant, and Semantic Search
 
-A simple web application that uses OpenAI's Realtime API to transcribe live audio from your microphone in real-time. No audio synthesis or chat functionality - just pure transcription.
+A browser‑based Secretary (live transcription) and a Sidekick assistant with push‑to‑talk (PTT). Transcripts and uploaded knowledge are embedded into SQLite (`sqlite-vec`) for fast semantic search. All OpenAI access happens server‑side with ephemeral tokens.
 
 ## Features
 
-- Real-time audio capture from browser microphone
-- Live transcription using OpenAI's Realtime API
-- Secure ephemeral token authentication
-- Clean, responsive UI with visual feedback
-- Low-latency WebRTC connection
+- Realtime transcription via OpenAI Realtime API (WebRTC)
+- Sidekick assistant with PTT that auto‑pauses/resumes Secretary
+- Session management with transcript history
+- Buffered transcript ingestion with auto‑flush (interval) and manual flush
+- Semantic search across transcripts and uploaded knowledge
+- Knowledge uploads: `.txt`, `.md`, `.pdf` (chunked + embedded)
+- Clean, minimal UI: `index.html` (Secretary), `dashboard.html` (sessions + knowledge), `viewer.html` (transcripts)
 
 ## Prerequisites
 
-- Node.js 18+ installed
-- OpenAI API key with access to the Realtime API
+- Node.js 18+
+- OpenAI API key with access to Realtime + Embeddings APIs
 
 ## Setup
 
-1. **Clone or download this project**
-
-2. **Install dependencies:**
+1. Clone or download this project
+2. Install dependencies:
    ```bash
    npm install
    ```
-
-3. **Configure your OpenAI API key:**
+3. Configure environment:
    ```bash
    cp .env.example .env
    ```
-   Edit `.env` and add your OpenAI API key:
+   Set the required key (server‑side only):
    ```
    OPENAI_API_KEY=sk-your-api-key-here
    ```
-
-4. **Start the server:**
+4. Start the server:
    ```bash
    npm start
    ```
-   
-   Or for development with auto-reload:
+   Or for development with auto‑reload:
    ```bash
    npm run dev
    ```
+5. Open your browser: `http://localhost:3000`
 
-5. **Open your browser:**
-   Navigate to `http://localhost:3000`
+Data is stored locally under `./data/` (including `./data/uploads/` for knowledge files). Override DB path via `SQLITE_DB_PATH`.
 
 ## How to Use
 
-1. Click "Start Transcription" button
-2. Allow microphone access when prompted
-3. Start speaking - your words will appear as text in real-time
-4. Click "Stop" when finished
+- Secretary only
+  - Open `/` and click Start; allow microphone; speak; see live transcript
+- Sidekick PTT
+  - Use the Sidekick panel to press and hold PTT; Secretary auto‑pauses; on release, Secretary resumes
+- Knowledge
+  - In Dashboard, upload `.txt/.md/.pdf`; files are chunked and embedded for search
+- Search
+  - Query recent transcripts and/or knowledge; results are nearest matches from `sqlite-vec`
 
 ## Architecture
 
-- **Backend (server.js):** Express server that generates ephemeral tokens for secure browser access
-- **Frontend (public/index.html):** WebRTC client that streams audio and receives transcriptions
-- **Security:** API keys never exposed to browser; uses short-lived tokens instead
+- Backend (`server.js`): Express API, ingestion buffer, embedding, session/knowledge/search endpoints
+- Database (`db.js`): SQLite with `sqlite-vec` for vector similarity search
+- Frontend (`public/`):
+  - `index.html`: Secretary UI + Realtime connection
+  - `sidekick.js`: PTT assistant coordination with Secretary
+  - `dashboard.html`, `viewer.html`: session management and viewing
+- OpenAI:
+  - Realtime sessions created server‑side via `/ephemeral-token` (model `gpt-4o-realtime-preview-2024-12-17`, transcription `whisper-1`)
+  - Embeddings via `text-embedding-3-large` (configurable)
+
+High‑level flow: Browser streams audio over WebRTC → server mints ephemeral session → partial transcripts are buffered and periodically embedded → search combines transcripts and uploaded knowledge.
+
+## API Overview (selected)
+
+- `GET /ephemeral-token` — Create short‑lived Realtime session (accepts `?language=`)
+- `POST /ingest` — Append transcript text to a session buffer
+- `POST /api/sessions` — Create a session; `GET /api/sessions` list; `GET /api/sessions/:id` fetch
+- `GET /api/sessions/:id/transcripts` — List embedded transcript chunks
+- `POST /api/sessions/:id/flush` — Force embed buffered text now
+- `POST /api/sessions/:id/knowledge` — Upload `.txt/.md/.pdf` or raw text+filename
+- `GET /api/sessions/:id/last-chunk` — Last content chunk (buffer or DB)
+- `POST /api/search` — Semantic search over transcripts/knowledge
+- `DELETE /api/sessions/:id` — Delete a session (+ its embeddings)
+- `DELETE /api/embeddings/:rowid` — Delete a single embedding row
 
 ## Configuration
 
-The app uses OpenAI's Realtime API with:
-- **Model:** gpt-4o-realtime-preview
-- **Mode:** Input transcription only (no TTS or agent responses)
-- **Audio:** Direct microphone streaming via WebRTC
+- Required: `OPENAI_API_KEY`
+- Optional:
+  - `SQLITE_DB_PATH` — SQLite file path (default `./data/transcripts.db`)
+  - `EMBEDDING_MODEL` — Defaults to `text-embedding-3-large`
+  - `EMBED_STRATEGY` — `minutely` (default)
+  - `EMBED_INTERVAL_MINUTES` — Default `3`
+  - `MAX_UPLOAD_SIZE` — Bytes (default 10MB)
+
+## Tests
+
+- Run all tests: `npm test`
+- Watch mode: `npm run test:watch`
+- Coverage: `npm run test:coverage`
+
+Tests live under `tests/**/*.test.js` (jsdom + Babel). Coverage is collected for `public/**/*.js`, `server.js`, and `db.js` (excluding `public/settings.js`).
+
+## Security
+
+- Never expose `OPENAI_API_KEY` in client code
+- Ephemeral tokens are minted server‑side at `/ephemeral-token`
+- CORS enabled for browser access; basic rate limiting applied server‑side
+
+## Dual‑Agent Workflow (CodeX + Claude)
+
+This repo uses a two‑role workflow to ship changes quickly and safely:
+
+- Planner (CodeX): defines the smallest next step as failing tests.
+- Implementer (Claude): writes the minimal code to make those tests pass.
+
+Flow: Planner opens PR with failing tests → Implementer commits until CI is green → squash‑merge.
+
+- Planner quickstart
+  - `git checkout -b feat/<slug>`
+  - Add failing tests only under `tests/`
+  - `npm test` (ensure failures represent the spec)
+  - Open a PR and fill the PR template (Context, Acceptance criteria, Out of scope, Risks)
+
+- Implementer quickstart
+  - Checkout the Planner’s branch
+  - `npm install && npm test`
+  - Implement the minimal changes to go green
+  - Do not edit acceptance criteria or remove tests
+  - If spec is wrong/unsafe: comment with `CHANGE_REQUEST: <reason + proposed fix>`
+
+CI runs lint, format check, and tests on PRs; `main` is protected and merged via squash only.
+
+See: `AGENTS.md` (Planner), `CLAUDE.md` (Implementer), and `CONTRIBUTING.md` (rules, CI, tools). Scope/goals live in `docs/PROJECT_SCOPE.md`.
 
 ## Troubleshooting
 
-- **"Failed to get session token":** Check your API key in `.env`
-- **No transcription appearing:** Ensure microphone permissions are granted
-- **Connection errors:** Verify you have access to the Realtime API on your OpenAI account
+- "Failed to create session": verify `OPENAI_API_KEY` and Realtime API access
+- No transcript: ensure mic permissions; try a supported browser
+- Search empty: ensure transcripts/knowledge are embedded (wait for interval or use flush)
 
-## Notes
-
-- The Realtime API requires a paid OpenAI account with API access
-- WebRTC connection provides lowest latency for live transcription
-- Transcriptions appear after complete utterances (not word-by-word)
+For scope and constraints, see `docs/PROJECT_SCOPE.md`. For contribution rules and CI, see `CONTRIBUTING.md`.
