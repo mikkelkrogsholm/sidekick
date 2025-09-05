@@ -801,7 +801,7 @@ app.get("/health", (req, res) => {
     let transcriptCount = 0;
     try {
       transcriptCount = db.prepare("SELECT COUNT(*) as count FROM vec_transcripts").get().count;
-    } catch (err) {
+    } catch (_err) {
       // vec_transcripts table might not exist if sqlite-vec failed to load
       console.log("vec_transcripts table not available");
     }

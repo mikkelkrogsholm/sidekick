@@ -539,7 +539,7 @@ function bindPTT(sessionId) {
           try {
             btn.setPointerCapture(e.pointerId);
             pointerCaptured = true;
-          } catch (err) {
+          } catch (_err) {
             console.log("Pointer capture not supported, using fallback");
           }
         }
@@ -555,7 +555,7 @@ function bindPTT(sessionId) {
           try {
             btn.releasePointerCapture(e.pointerId);
             pointerCaptured = false;
-          } catch (err) {
+          } catch (_err) {
             // Ignore
           }
         }

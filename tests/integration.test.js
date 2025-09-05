@@ -63,7 +63,7 @@ class MockRTCPeerConnection {
     return Promise.resolve();
   }
 
-  addTrack(track, stream) {
+  addTrack(track, _stream) {
     const sender = new MockRTCRtpSender(track);
     this.senders.push(sender);
     return sender;
@@ -257,7 +257,6 @@ describe('Secretary-Sidekick Integration Tests', () => {
         resume: jest.fn(() => { secretaryPaused = false; }),
         isActive: jest.fn(() => !global.window.startBtn?.disabled && !secretaryPaused)
       };
-      const pauseSpy = global.window.Secretary.pause;
 
       // Mock Settings for auto-pause
       global.window.Settings = {
@@ -284,7 +283,6 @@ describe('Secretary-Sidekick Integration Tests', () => {
         resume: jest.fn(() => { secretaryPaused = false; }),
         isActive: jest.fn(() => !secretaryPaused)
       };
-      const resumeSpy = global.window.Secretary.resume;
 
       // Simulate PTT end by directly invoking Secretary.resume()
       global.window.Secretary.resume();
@@ -561,7 +559,7 @@ describe('Secretary-Sidekick Integration Tests', () => {
         try {
           const msg = JSON.parse(event.data);
           conversationEvents.push(msg);
-        } catch (e) {
+        } catch (_e) {
           // Ignore non-JSON messages
         }
       };
@@ -726,7 +724,7 @@ describe('Secretary-Sidekick Integration Tests', () => {
         try {
           const parsed = JSON.parse(event.data);
           messages.push(parsed);
-        } catch (e) {
+        } catch (_e) {
           // Should handle malformed JSON gracefully
           messages.push({ error: 'Invalid JSON', raw: event.data });
         }
@@ -750,7 +748,7 @@ describe('Secretary-Sidekick Integration Tests', () => {
       const pc = new MockRTCPeerConnection();
       const dc = pc.createDataChannel('test');
       const audioTrack = new MockMediaStreamTrack('audio');
-      const stream = new MockMediaStream([audioTrack]);
+      const _stream = new MockMediaStream([audioTrack]);
 
       // Wait for connection
       await new Promise(resolve => {
