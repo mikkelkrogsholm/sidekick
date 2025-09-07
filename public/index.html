@@ -7,14 +7,15 @@
     <link rel="stylesheet" href="/styles/base.css" />
     <link rel="stylesheet" href="/styles/app.css" />
     <link rel="stylesheet" href="/styles/icons.css" />
+    <link rel="stylesheet" href="/styles/tailwind.css" />
     <title>Live Audio Transcription</title>
 </head>
 <body>
-    <div class="app">
+    <div class="app min-h-dvh grid grid-rows-[auto_1fr]">
         <header class="topbar">
             <div class="container topbar__inner">
                 <div class="brand">
-                    <img src="/logo.svg" alt="Voice Transcription Logo" style="height: 32px; width: auto;">
+                    <img src="/logo.svg" alt="Voice Transcription Logo" class="h-8 w-auto">
                     <h1 class="brand__title">Transcription</h1>
                     <span class="brand__meta">Realtime</span>
                 </div>
@@ -38,14 +39,170 @@
             </div>
         </header>
 
-        <main class="container grid-2col index">
-          
-          <section id="secretaryPanel" class="card">
+        <!-- Unified Settings Panel -->
+        <div class="settings-panel" id="settingsPanel">
+          <div class="container">
+            <div class="settings-header" id="settingsHeader">
+              <div class="settings-summary" id="settingsSummary">
+                <span class="summary-item">Session: <strong id="summarySession">None</strong></span>
+                <span class="summary-item">Language: <strong id="summaryLanguage">EN</strong></span>
+                <span class="summary-item">Model: <strong id="summaryModel">gpt-4o</strong></span>
+                <span class="summary-item">Status: <strong id="summaryStatus" class="disconnected">Disconnected</strong></span>
+              </div>
+              <button class="settings-toggle" id="settingsToggle" aria-label="Toggle settings">
+                <svg class="chevron" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M5 7.5L10 12.5L15 7.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            </div>
+            
+            <div class="settings-content hidden" id="settingsContent">
+              <div class="settings-grid">
+                <!-- Session Management -->
+                <div class="settings-section">
+                  <h3>Session Management</h3>
+                  
+                  <!-- Current Session Display -->
+                  <div class="current-session-display" id="currentSession">
+                    <div class="session-indicator"></div>
+                    <div>
+                      <strong>Current Session:</strong> <span id="currentSessionName">None</span>
+                    </div>
+                  </div>
+                  
+                  <!-- Create New Session -->
+                  <div class="field">
+                    <label>Create New Session</label>
+                    <div class="ask-toolbar">
+                      <input id="newSessionName" class="input" type="text" placeholder="Enter session name..." />
+                      <button id="createSessionBtn" class="button">Create</button>
+                    </div>
+                  </div>
+                  
+                  <!-- Available Sessions -->
+                  <div class="field">
+                    <label>Available Sessions</label>
+                    <div id="sessionList" class="session-list">
+                      <!-- Sessions will be loaded here -->
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Secretary Settings -->
+                <div class="settings-section">
+                  <h3>Secretary Settings</h3>
+                  
+                  <div class="field">
+                    <label for="languageSelect">Language</label>
+                    <select id="languageSelect" class="input">
+                      <option value="en">English</option>
+                      <option value="da">Danish (Dansk)</option>
+                      <option value="es">Spanish (Español)</option>
+                      <option value="fr">French (Français)</option>
+                      <option value="de">German (Deutsch)</option>
+                      <option value="it">Italian (Italiano)</option>
+                      <option value="pt">Portuguese (Português)</option>
+                      <option value="nl">Dutch (Nederlands)</option>
+                      <option value="sv">Swedish (Svenska)</option>
+                      <option value="no">Norwegian (Norsk)</option>
+                      <option value="fi">Finnish (Suomi)</option>
+                      <option value="ja">Japanese (日本語)</option>
+                      <option value="ko">Korean (한국어)</option>
+                      <option value="zh">Chinese (中文)</option>
+                    </select>
+                  </div>
+                  
+                  <div class="field">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="sec_show_timestamps">
+                      <span>Show timestamps</span>
+                    </label>
+                  </div>
+                </div>
+                
+                <!-- Sidekick Settings -->
+                <div class="settings-section">
+                  <h3>Sidekick Settings</h3>
+                  
+                  <div class="field">
+                    <div class="control-buttons">
+                      <button id="skSettingsBtn" class="button button--ghost">Advanced</button>
+                      <button id="skConnectBtn" class="button button--primary">Connect</button>
+                    </div>
+                  </div>
+                  
+                  <div class="field">
+                    <label for="sk_model">Model</label>
+                    <select id="sk_model" class="input">
+                      <option value="gpt-4o-realtime-preview-2024-12-17">gpt-4o-realtime-preview-2024-12-17</option>
+                    </select>
+                  </div>
+                  
+                  <div class="field">
+                    <label for="sk_voice">Voice</label>
+                    <select id="sk_voice" class="input">
+                      <option>marin</option>
+                      <option>verse</option>
+                      <option>alloy</option>
+                    </select>
+                  </div>
+                  
+                  <div class="field">
+                    <label for="sk_ptt_mode">PTT Mode</label>
+                    <select id="sk_ptt_mode" class="input">
+                      <option value="hold">Hold to talk</option>
+                      <option value="toggle">Click to toggle</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <!-- Advanced Sidekick Settings -->
+                <div class="settings-section">
+                  <h3>Advanced Settings</h3>
+                  
+                  <div class="field">
+                    <label for="sk_prompt">System prompt</label>
+                    <textarea id="sk_prompt" class="input" rows="4"></textarea>
+                  </div>
+                  
+                  <div class="field">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="sk_use_notes" checked>
+                      <span>Use latest notes on start</span>
+                    </label>
+                  </div>
+                  
+                  <div class="field">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="sk_autopause" checked>
+                      <span>Auto-pause Secretary during Sidekick conversation</span>
+                    </label>
+                  </div>
+                  
+                  <div class="field">
+                    <label class="checkbox-label">
+                      <input type="checkbox" id="sk_record_conversations">
+                      <span>Record Sidekick conversations</span>
+                    </label>
+                  </div>
+                  
+                  <div class="field">
+                    <label for="sk_temp">Temperature: <span id="tempValue">0.6</span></label>
+                    <input id="sk_temp" type="range" min="0.1" max="1.0" step="0.1" value="0.6" class="input">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <main class="index min-w-0 @container">
+          <div class="container @container stack">
+          <div class="grid-2col @sm:gap-4 @md:gap-6">
+          <section id="secretaryPanel" class="card @sm:p-5 @md:p-6">
             <div class="panel-header">
               <h2>Secretary</h2>
-              <div class="panel-actions">
-                <button id="toggleSessionsBtn" class="button button--ghost">Sessions</button>
-              </div>
+              <div class="panel-actions"></div>
             </div>
 
             <div class="field">
@@ -53,26 +210,6 @@
               <div id="transcript" aria-live="polite" aria-atomic="false">
                 <div class="placeholder">Click "Start" and begin speaking...</div>
               </div>
-            </div>
-
-            <div class="field">
-              <label for="languageSelect">Language</label>
-              <select id="languageSelect" class="input">
-                <option value="en">English</option>
-                <option value="da">Danish (Dansk)</option>
-                <option value="es">Spanish (Español)</option>
-                <option value="fr">French (Français)</option>
-                <option value="de">German (Deutsch)</option>
-                <option value="it">Italian (Italiano)</option>
-                <option value="pt">Portuguese (Português)</option>
-                <option value="nl">Dutch (Nederlands)</option>
-                <option value="sv">Swedish (Svenska)</option>
-                <option value="no">Norwegian (Norsk)</option>
-                <option value="fi">Finnish (Suomi)</option>
-                <option value="ja">Japanese (日本語)</option>
-                <option value="ko">Korean (한국어)</option>
-                <option value="zh">Chinese (中文)</option>
-              </select>
             </div>
 
             <div class="field">
@@ -86,42 +223,13 @@
                 <button id="stopBtn" class="button button--danger" disabled>Stop</button>
               </div>
             </div>
-
-            <!-- Current Session Display -->
-            <div id="currentSession" class="current-session-display">
-              <div class="session-indicator"></div>
-              <div>
-                <strong>Current Session:</strong> <span id="currentSessionName">None</span>
-              </div>
-            </div>
-            
-            <!-- Session Management Panel (hidden by default) -->
-            <div id="sessionPanel" class="session-panel" style="display: none;">
-              <div class="field">
-                <label>Create New Session</label>
-              <div class="ask-toolbar">
-                <input id="newSessionName" class="input" type="text" placeholder="Enter session name..." />
-                <button id="createSessionBtn" class="button">Create</button>
-              </div>
-              </div>
-              
-              <div class="field">
-                <label>Available Sessions</label>
-                <div id="sessionList" class="session-list">
-                  <!-- Sessions will be loaded here -->
-                </div>
-              </div>
-            </div>
           </section>
 
           
-          <section id="sidekickPanel" class="card">
+          <section id="sidekickPanel" class="card @sm:p-5 @md:p-6">
             <div class="panel-header">
               <h2>Sidekick</h2>
-              <div class="panel-actions">
-                <button id="skSettingsBtn" class="button button--ghost">Settings</button>
-                <button id="skConnectBtn" class="button button--primary">Connect</button>
-              </div>
+              <div class="panel-actions"></div>
             </div>
 
             <div class="field">
@@ -141,55 +249,12 @@
             <audio id="skAudio" autoplay></audio>
             <pre id="skOutput" class="mono small"></pre>
           </section>
+          </div>
+          </div>
         </main>
     </div>
 
     <div id="audioIndicator" style="display: none;"></div>
-
-    <aside id="settingsDrawer" class="drawer hidden">
-      <header class="drawer__header">
-        <h3>Settings</h3>
-        <button id="closeSettings" class="button">Close</button>
-      </header>
-
-      <section>
-        <h4>Secretary</h4>
-        <label><input type="checkbox" id="sec_show_timestamps"> Show timestamps</label>
-      </section>
-
-      <section>
-        <h4>Sidekick</h4>
-        <label>System prompt</label>
-        <textarea id="sk_prompt" rows="6"></textarea>
-
-        <label>Model
-          <select id="sk_model">
-            <option value="gpt-4o-realtime-preview-2024-12-17">gpt-4o-realtime-preview-2024-12-17</option>
-          </select>
-        </label>
-
-        <label>Voice
-          <select id="sk_voice">
-            <option>marin</option>
-            <option>verse</option>
-            <option>alloy</option>
-          </select>
-        </label>
-
-        <label><input type="checkbox" id="sk_use_notes" checked> Use latest notes on start</label>
-        <label><input type="checkbox" id="sk_autopause" checked> Auto-pause Secretary during entire Sidekick conversation</label>
-        <label><input type="checkbox" id="sk_record_conversations"> Record Sidekick conversations</label>
-
-        <label>PTT Mode
-          <select id="sk_ptt_mode">
-            <option value="hold">Hold to talk</option>
-            <option value="toggle">Click to toggle</option>
-          </select>
-        </label>
-
-        <label>Temperature <input id="sk_temp" type="range" min="0.1" max="1.0" step="0.1" value="0.6"></label>
-      </section>
-    </aside>
 
     <script src="/settings.js"></script>
     <script src="/sidekick.js"></script>
@@ -200,13 +265,18 @@
         const transcript = document.getElementById('transcript');
         const status = document.getElementById('status');
         const audioIndicator = document.getElementById('audioIndicator');
-        const toggleSessionsBtn = document.getElementById('toggleSessionsBtn');
-        const sessionPanel = document.getElementById('sessionPanel');
+        // Settings panel elements
+        const settingsToggle = document.getElementById('settingsToggle');
+        const settingsContent = document.getElementById('settingsContent');
+        const settingsHeader = document.getElementById('settingsHeader');
         const sessionList = document.getElementById('sessionList');
         const newSessionName = document.getElementById('newSessionName');
         const createSessionBtn = document.getElementById('createSessionBtn');
-        const currentSession = document.getElementById('currentSession');
         const currentSessionNameSpan = document.getElementById('currentSessionName');
+        const summarySession = document.getElementById('summarySession');
+        const summaryLanguage = document.getElementById('summaryLanguage');
+        const summaryModel = document.getElementById('summaryModel');
+        const summaryStatus = document.getElementById('summaryStatus');
         
         let pc = null;
         let stream = null;
@@ -394,7 +464,8 @@
             currentSessionId = session.id;
             currentSessionName = session.name;
             currentSessionNameSpan.textContent = session.name;
-            currentSession.style.display = 'flex';
+            summarySession.textContent = session.name;
+            document.getElementById('currentSession').style.display = 'flex';
             
             // Update UI
             document.querySelectorAll('.session-item').forEach(item => {
@@ -450,14 +521,70 @@
             }
         };
         
-        toggleSessionsBtn.onclick = () => {
-            const isVisible = sessionPanel.style.display !== 'none';
-            sessionPanel.style.display = isVisible ? 'none' : 'block';
-            toggleSessionsBtn.textContent = isVisible ? 'Show Sessions' : 'Hide Sessions';
-            
-            if (!isVisible) {
+        // Settings panel toggle
+        settingsToggle.onclick = () => {
+            const isExpanded = !settingsContent.classList.contains('hidden');
+            if (isExpanded) {
+                settingsContent.classList.add('hidden');
+                settingsToggle.classList.remove('expanded');
+                localStorage.setItem('settingsExpanded', 'false');
+            } else {
+                settingsContent.classList.remove('hidden');
+                settingsToggle.classList.add('expanded');
+                localStorage.setItem('settingsExpanded', 'true');
                 loadSessions();
             }
+        };
+        
+        // Load settings panel state from localStorage
+        const settingsExpanded = localStorage.getItem('settingsExpanded') === 'true';
+        if (settingsExpanded) {
+            settingsContent.classList.remove('hidden');
+            settingsToggle.classList.add('expanded');
+        }
+        
+        // Update summary when language changes
+        languageSelect.onchange = () => {
+            const selectedOption = languageSelect.options[languageSelect.selectedIndex];
+            const langCode = selectedOption.value.toUpperCase();
+            summaryLanguage.textContent = langCode;
+            
+            if (dc && dc.readyState === 'open') {
+                // Send session update to change language
+                const update = {
+                    type: 'session.update',
+                    session: {
+                        input_audio_transcription: {
+                            model: 'whisper-1',
+                            language: languageSelect.value
+                        }
+                    }
+                };
+                dc.send(JSON.stringify(update));
+                console.log('Language updated to:', languageSelect.value);
+                
+                // Add visual feedback
+                const line = document.createElement('div');
+                line.className = 'transcript-line';
+                line.style.fontStyle = 'italic';
+                line.style.color = '#667eea';
+                line.textContent = `[Language switched to ${selectedOption.text}]`;
+                transcript.appendChild(line);
+            }
+        };
+        
+        // Update summary when model changes
+        const modelSelect = document.getElementById('sk_model');
+        modelSelect.onchange = () => {
+            const shortName = modelSelect.value.includes('gpt-4o') ? 'gpt-4o' : modelSelect.value;
+            summaryModel.textContent = shortName;
+        };
+        
+        // Temperature slider update
+        const tempSlider = document.getElementById('sk_temp');
+        const tempValue = document.getElementById('tempValue');
+        tempSlider.oninput = () => {
+            tempValue.textContent = tempSlider.value;
         };
         
         // Load saved session on page load and verify it still exists
@@ -474,7 +601,8 @@
                         currentSessionId = savedSessionId;
                         currentSessionName = savedSessionName;
                         currentSessionNameSpan.textContent = savedSessionName;
-                        currentSession.style.display = 'flex';
+                        summarySession.textContent = savedSessionName;
+                        document.getElementById('currentSession').style.display = 'flex';
                         
                         // Update navigation session indicator
                         const navSession = document.getElementById('navSession');
@@ -503,7 +631,10 @@
         startBtn.onclick = async () => {
             if (!currentSessionId) {
                 alert('Please create or select a session first');
-                toggleSessionsBtn.click();
+                // Expand settings panel if not already expanded
+                if (settingsContent.classList.contains('hidden')) {
+                    settingsToggle.click();
+                }
                 return;
             }
             
@@ -766,8 +897,8 @@
           // Primary controls
           attach(document.getElementById('startBtn'), 'play');
           attach(document.getElementById('stopBtn'), 'stop');
+          attach(document.getElementById('settingsToggle'), 'settings');
           attach(document.getElementById('skSettingsBtn'), 'settings');
-          attach(document.getElementById('toggleSessionsBtn'), 'sessions');
 
           // Top nav
           const navDashboard = document.querySelector('a[href="/dashboard.html"]');

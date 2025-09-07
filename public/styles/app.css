@@ -98,6 +98,129 @@
 .embedding-notification.success    { border-color: var(--color-success); }
 .embedding-notification.error      { border-color: var(--color-danger); color: var(--color-danger); }
 
+/* ========== SETTINGS PANEL (Unified) ========== */
+.settings-panel {
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-s);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) 0;
+  cursor: pointer;
+}
+
+.settings-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  font-size: var(--text-s);
+  color: var(--color-text-secondary);
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.summary-item strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.summary-item .connected {
+  color: var(--color-success);
+}
+
+.summary-item .disconnected {
+  color: var(--color-text-muted);
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-s);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  transition: all var(--duration) var(--ease);
+}
+
+.settings-toggle:hover {
+  background: var(--color-surface);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.settings-toggle .chevron {
+  transition: transform var(--duration) var(--ease);
+}
+
+.settings-toggle.expanded .chevron {
+  transform: rotate(180deg);
+}
+
+.settings-content {
+  padding: var(--space-5) 0;
+  border-top: 1px solid var(--color-border);
+  transition: all var(--duration) var(--ease);
+}
+
+.settings-content.hidden {
+  display: none;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-6);
+}
+
+.settings-section {
+  background: var(--color-bg);
+  padding: var(--space-4);
+  border-radius: var(--radius-m);
+  border: 1px solid var(--color-border);
+}
+
+.settings-section h3 {
+  font-size: var(--text-m);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.settings-section .field + .field {
+  margin-top: var(--space-3);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  cursor: pointer;
+  color: var(--color-text-secondary);
+}
+
+.checkbox-label:hover {
+  color: var(--color-text-primary);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
 /* ========== INDEX (Live Transcription) ========== */
 .index {
   padding-block: var(--space-6);

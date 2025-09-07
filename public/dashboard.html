@@ -6,14 +6,15 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg">
     <link rel="stylesheet" href="/styles/base.css" />
     <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/tailwind.css" />
     <title>Voice Transcription Dashboard</title>
 </head>
 <body>
-    <div class="app">
+    <div class="app min-h-dvh grid grid-rows-[auto_1fr]">
         <header class="topbar">
             <div class="container topbar__inner">
                 <div class="brand">
-                    <img src="/logo.svg" alt="Voice Transcription Logo" style="height: 32px; width: auto;">
+                    <img src="/logo.svg" alt="Voice Transcription Logo" class="h-8 w-auto">
                     <h1 class="brand__title">Dashboard</h1>
                     <span class="brand__meta">Overview</span>
                 </div>
@@ -34,9 +35,9 @@
             </div>
         </header>
 
-        <main class="dashboard">
+        <main class="dashboard min-w-0 @container">
             <div class="container stack">
-                <section class="stats">
+                <section class="stats grid grid-cols-2 @sm:grid-cols-3 @md:grid-cols-4 gap-4">
                     <div class="card stat">
                         <div class="kpi" id="totalSessions">0</div>
                         <div class="label">Sessions</div>
@@ -55,7 +56,7 @@
                     </div>
                 </section>
 
-                <section class="card" style="padding: 8px 0;">
+                <section class="card py-2 px-0 @sm:p-4">
                     <div id="sessionsList"></div>
                 </section>
             </div>
