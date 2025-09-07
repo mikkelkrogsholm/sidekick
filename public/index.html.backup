@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/logo.svg">
+    <link rel="stylesheet" href="/styles/base.css" />
+    <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/icons.css" />
+    <link rel="stylesheet" href="/styles/tailwind.css" />
+    <title>Live Audio Transcription</title>
+</head>
+<body>
+    <div class="app min-h-dvh grid grid-rows-[auto_1fr]">
+        <header class="topbar">
+            <div class="container topbar__inner">
+                <div class="brand">
+                    <img src="/logo.svg" alt="Voice Transcription Logo" class="h-8 w-auto">
+                    <h1 class="brand__title">Transcription</h1>
+                    <span class="brand__meta">Realtime</span>
+                </div>
+
+                <div class="nav-links">
+                    <a href="/dashboard.html" class="nav-link">Dashboard</a>
+                    <a href="/" class="nav-link active">Transcribe</a>
+                    <a href="/viewer.html" class="nav-link">Viewer</a>
+                </div>
+
+                <div class="row">
+                    <div id="status" class="status idle">
+                        <span class="dot" aria-hidden="true"></span>
+                        <span>Idle</span>
+                    </div>
+                    <div class="nav-session" id="navSession">
+                        <span class="session-indicator"></span>
+                        <span class="session-text">No Session</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="container grid-2col index min-w-0">
+          <div class="@container grid-2col">
+          <section id="secretaryPanel" class="card @sm:p-6 @md:p-8">
+            <div class="panel-header">
+              <h2>Secretary</h2>
+              <div class="panel-actions">
+                <button id="toggleSessionsBtn" class="button button--ghost">Sessions</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Transcript</label>
+              <div id="transcript" aria-live="polite" aria-atomic="false">
+                <div class="placeholder">Click "Start" and begin speaking...</div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="languageSelect">Language</label>
+              <select id="languageSelect" class="input">
+                <option value="en">English</option>
+                <option value="da">Danish (Dansk)</option>
+                <option value="es">Spanish (Español)</option>
+                <option value="fr">French (Français)</option>
+                <option value="de">German (Deutsch)</option>
+                <option value="it">Italian (Italiano)</option>
+                <option value="pt">Portuguese (Português)</option>
+                <option value="nl">Dutch (Nederlands)</option>
+                <option value="sv">Swedish (Svenska)</option>
+                <option value="no">Norwegian (Norsk)</option>
+                <option value="fi">Finnish (Suomi)</option>
+                <option value="ja">Japanese (日本語)</option>
+                <option value="ko">Korean (한국어)</option>
+                <option value="zh">Chinese (中文)</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="audioIndicator">Input level</label>
+              <div id="audioIndicator" aria-hidden="true"></div>
+            </div>
+
+            <div class="field">
+              <div class="control-buttons">
+                <button id="startBtn" class="button button--primary">Start</button>
+                <button id="stopBtn" class="button button--danger" disabled>Stop</button>
+              </div>
+            </div>
+
+            <!-- Current Session Display -->
+            <div id="currentSession" class="current-session-display">
+              <div class="session-indicator"></div>
+              <div>
+                <strong>Current Session:</strong> <span id="currentSessionName">None</span>
+              </div>
+            </div>
+            
+            <!-- Session Management Panel (hidden by default) -->
+            <div id="sessionPanel" class="session-panel hidden">
+              <div class="field">
+                <label>Create New Session</label>
+              <div class="ask-toolbar">
+                <input id="newSessionName" class="input" type="text" placeholder="Enter session name..." />
+                <button id="createSessionBtn" class="button">Create</button>
+              </div>
+              </div>
+              
+              <div class="field">
+                <label>Available Sessions</label>
+                <div id="sessionList" class="session-list">
+                  <!-- Sessions will be loaded here -->
+                </div>
+              </div>
+            </div>
+          </section>
+
+          
+          <section id="sidekickPanel" class="card @sm:p-6 @md:p-8">
+            <div class="panel-header">
+              <h2>Sidekick</h2>
+              <div class="panel-actions">
+                <button id="skSettingsBtn" class="button button--ghost">Settings</button>
+                <button id="skConnectBtn" class="button button--primary">Connect</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Ask (text)</label>
+              <div class="ask-toolbar">
+                <input id="skText" class="input">
+                <button id="skSend" class="button">Send</button>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>Push-to-talk</label>
+              <button id="skPTT" class="button">Hold to talk</button>
+              <small class="muted" id="skStatus"></small>
+            </div>
+
+            <audio id="skAudio" autoplay></audio>
+            <pre id="skOutput" class="mono small"></pre>
+          </section>
+          </div>
+        </main>
+    </div>
+
+    <div id="audioIndicator" style="display: none;"></div>
+
+    <aside id="settingsDrawer" class="drawer hidden">
+      <header class="drawer__header">
+        <h3>Settings</h3>
+        <button id="closeSettings" class="button">Close</button>
+      </header>
+
+      <section>
+        <h4>Secretary</h4>
+        <label><input type="checkbox" id="sec_show_timestamps"> Show timestamps</label>
+      </section>
+
+      <section>
+        <h4>Sidekick</h4>
+        <label>System prompt</label>
+        <textarea id="sk_prompt" rows="6"></textarea>
+
+        <label>Model
+          <select id="sk_model">
+            <option value="gpt-4o-realtime-preview-2024-12-17">gpt-4o-realtime-preview-2024-12-17</option>
+          </select>
+        </label>
+
+        <label>Voice
+          <select id="sk_voice">
+            <option>marin</option>
+            <option>verse</option>
+            <option>alloy</option>
+          </select>
+        </label>
+
+        <label><input type="checkbox" id="sk_use_notes" checked> Use latest notes on start</label>
+        <label><input type="checkbox" id="sk_autopause" checked> Auto-pause Secretary during entire Sidekick conversation</label>
+        <label><input type="checkbox" id="sk_record_conversations"> Record Sidekick conversations</label>
+
+        <label>PTT Mode
+          <select id="sk_ptt_mode">
+            <option value="hold">Hold to talk</option>
+            <option value="toggle">Click to toggle</option>
+          </select>
+        </label>
+
+        <label>Temperature <input id="sk_temp" type="range" min="0.1" max="1.0" step="0.1" value="0.6"></label>
+      </section>
+    </aside>
+
+    <script src="/settings.js"></script>
+    <script src="/sidekick.js"></script>
+    <script type="module">
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const languageSelect = document.getElementById('languageSelect');
+        const transcript = document.getElementById('transcript');
+        const status = document.getElementById('status');
+        const audioIndicator = document.getElementById('audioIndicator');
+        const toggleSessionsBtn = document.getElementById('toggleSessionsBtn');
+        const sessionPanel = document.getElementById('sessionPanel');
+        const sessionList = document.getElementById('sessionList');
+        const newSessionName = document.getElementById('newSessionName');
+        const createSessionBtn = document.getElementById('createSessionBtn');
+        const currentSession = document.getElementById('currentSession');
+        const currentSessionNameSpan = document.getElementById('currentSessionName');
+        
+        let pc = null;
+        let stream = null;
+        let dc = null;  // Store data channel reference
+        let currentTranscript = '';
+        let transcriptBuffer = '';
+        let ingestQueue = [];  // Queue for batching transcript sends
+        let ingestTimer = null; // Timer for debouncing
+        let currentSessionId = null; // Will be set when session is selected/created
+        let currentSessionName = 'None';
+        
+        function updateStatus(text, className) {
+            status.textContent = text;
+            status.className = `status ${className}`;
+        }
+        
+        // Show embedding notification
+        function showEmbeddingNotification(message, type = 'processing') {
+            // Remove any existing notifications
+            const existingNotification = document.querySelector('.embedding-notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+            
+            const notification = document.createElement('div');
+            notification.className = `embedding-notification ${type}`;
+            
+            if (type === 'processing') {
+                notification.innerHTML = `
+                    <div class="embedding-spinner"></div>
+                    <span>${message}</span>
+                `;
+            } else {
+                notification.innerHTML = `
+                    <span>OK</span>
+                    <span>${message}</span>
+                `;
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds for success messages
+            if (type === 'success') {
+                setTimeout(() => {
+                    notification.style.animation = 'slideInRight 0.3s ease reverse';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+            
+            return notification;
+        }
+        
+        function addTranscriptLine(text) {
+            if (transcript.querySelector('.placeholder')) {
+                transcript.innerHTML = '';
+            }
+            
+            const line = document.createElement('div');
+            line.className = 'transcript-line';
+            line.textContent = text;
+            transcript.appendChild(line);
+            
+            // Auto-scroll to bottom
+            transcript.scrollTop = transcript.scrollHeight;
+        }
+        
+        // Expose Transcript helpers for Sidekick
+        window.Transcript = {
+            addLine: addTranscriptLine,
+            addConversation: function({ user, assistant }) {
+                if (transcript.querySelector('.placeholder')) {
+                    transcript.innerHTML = '';
+                }
+                
+                // Create conversation block container
+                const block = document.createElement('div');
+                block.className = 'sidekick-conversation-block';
+                
+                // Add header
+                const header = document.createElement('div');
+                header.className = 'sidekick-conversation-header';
+                header.textContent = '[Sidekick conversation]';
+                block.appendChild(header);
+                
+                // Add user line
+                const userLine = document.createElement('div');
+                userLine.className = 'transcript-line sidekick-user';
+                userLine.textContent = `You: ${user}`;
+                block.appendChild(userLine);
+                
+                // Add assistant line
+                const assistantLine = document.createElement('div');
+                assistantLine.className = 'transcript-line sidekick-assistant';
+                assistantLine.textContent = `Sidekick: ${assistant}`;
+                block.appendChild(assistantLine);
+                
+                transcript.appendChild(block);
+                
+                // Auto-scroll to bottom
+                transcript.scrollTop = transcript.scrollHeight;
+            }
+        };
+        
+        // Session management functions
+        // Utility function to escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // Debounced function to send transcripts to server
+        function sendTranscriptToServer(transcript) {
+            ingestQueue.push(transcript);
+            
+            // Clear existing timer
+            if (ingestTimer) {
+                clearTimeout(ingestTimer);
+            }
+            
+            // Set new timer to send after 500ms of no new transcripts
+            ingestTimer = setTimeout(async () => {
+                if (ingestQueue.length === 0) return;
+                
+                // Get all queued transcripts
+                const transcriptsToSend = [...ingestQueue];
+                ingestQueue = [];
+                
+                // Send all transcripts as a batch
+                for (const text of transcriptsToSend) {
+                    try {
+                        const response = await fetch('/ingest', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                sessionId: currentSessionId,
+                                language: languageSelect.value || 'en',
+                                text: text
+                            })
+                        });
+                        
+                        if (!response.ok) {
+                            const err = await response.json();
+                            throw new Error(err.error || 'Failed to send transcript');
+                        }
+                    } catch (error) {
+                        console.error('Error sending transcript:', error);
+                        // Don't show error in UI for each transcript to avoid spam
+                    }
+                }
+            }, 500); // Wait 500ms before sending
+        }
+        
+        async function loadSessions() {
+            try {
+                const response = await fetch('/api/sessions');
+                const sessions = await response.json();
+                
+                sessionList.innerHTML = sessions.length ? '' : '<div style="text-align: center; color: #999; padding: 20px;">No sessions yet</div>';
+                
+                sessions.forEach(session => {
+                    const item = document.createElement('div');
+                    item.className = 'session-item' + (session.id === currentSessionId ? ' active' : '');
+                    
+                    const date = new Date(session.created_at);
+                    const formattedDate = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+                    
+                    item.innerHTML = `
+                        <div class="session-info">
+                            <div class="session-name">${escapeHtml(session.name)}</div>
+                            <div class="session-meta">${escapeHtml(formattedDate)} • ${session.total_transcripts} transcripts</div>
+                        </div>
+                    `;
+                    
+                    item.onclick = function() { selectSession(session, this); };
+                    sessionList.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Error loading sessions:', error);
+                sessionList.innerHTML = '<div style="color: red; padding: 10px;">Error loading sessions</div>';
+            }
+        }
+        
+        function selectSession(session, element = null) {
+            currentSessionId = session.id;
+            currentSessionName = session.name;
+            currentSessionNameSpan.textContent = session.name;
+            currentSession.style.display = 'flex';
+            
+            // Update UI
+            document.querySelectorAll('.session-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Add active class to the clicked element if provided
+            if (element) {
+                element.classList.add('active');
+            }
+            
+            // Update navigation session indicator
+            const navSession = document.getElementById('navSession');
+            if (navSession) {
+                const indicator = navSession.querySelector('.session-indicator');
+                const text = navSession.querySelector('.session-text');
+                indicator.classList.add('active');
+                text.textContent = session.name;
+            }
+            
+            // Store in localStorage for persistence
+            localStorage.setItem('currentSessionId', session.id);
+            localStorage.setItem('currentSessionName', session.name);
+            
+            updateStatus(`Session selected: ${session.name}`, 'idle');
+        }
+        
+        createSessionBtn.onclick = async () => {
+            const name = newSessionName.value.trim();
+            if (!name) {
+                alert('Please enter a session name');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/sessions', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to create session');
+                }
+                
+                const session = await response.json();
+                selectSession(session);
+                newSessionName.value = '';
+                await loadSessions();
+            } catch (error) {
+                console.error('Error creating session:', error);
+                alert('Failed to create session');
+            }
+        };
+        
+        toggleSessionsBtn.onclick = () => {
+            const isVisible = !sessionPanel.classList.contains('hidden');
+            if (isVisible) {
+                sessionPanel.classList.add('hidden');
+            } else {
+                sessionPanel.classList.remove('hidden');
+            }
+            toggleSessionsBtn.textContent = isVisible ? 'Show Sessions' : 'Hide Sessions';
+            
+            if (!isVisible) {
+                loadSessions();
+            }
+        };
+        
+        // Load saved session on page load and verify it still exists
+        async function loadSavedSession() {
+            const savedSessionId = localStorage.getItem('currentSessionId');
+            const savedSessionName = localStorage.getItem('currentSessionName');
+            
+            if (savedSessionId && savedSessionName) {
+                // Verify session still exists
+                try {
+                    const response = await fetch(`/api/sessions/${savedSessionId}`);
+                    if (response.ok) {
+                        // Session exists, use it
+                        currentSessionId = savedSessionId;
+                        currentSessionName = savedSessionName;
+                        currentSessionNameSpan.textContent = savedSessionName;
+                        currentSession.style.display = 'flex';
+                        
+                        // Update navigation session indicator
+                        const navSession = document.getElementById('navSession');
+                        if (navSession) {
+                            const indicator = navSession.querySelector('.session-indicator');
+                            const text = navSession.querySelector('.session-text');
+                            indicator.classList.add('active');
+                            text.textContent = savedSessionName;
+                        }
+                    } else if (response.status === 404) {
+                        // Session was deleted, clear localStorage
+                        console.log('Saved session no longer exists, clearing...');
+                        localStorage.removeItem('currentSessionId');
+                        localStorage.removeItem('currentSessionName');
+                        currentSessionId = null;
+                        currentSessionName = 'None';
+                    }
+                } catch (error) {
+                    console.error('Error verifying saved session:', error);
+                }
+            }
+        }
+        
+        loadSavedSession();
+        
+        startBtn.onclick = async () => {
+            if (!currentSessionId) {
+                alert('Please create or select a session first');
+                toggleSessionsBtn.click();
+                return;
+            }
+            
+            try {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                updateStatus('Connecting to transcription service...', 'connecting');
+                
+                // Get ephemeral token from backend with selected language
+                const selectedLanguage = languageSelect.value;
+                const tokenResponse = await fetch(`/ephemeral-token?language=${selectedLanguage}`);
+                if (!tokenResponse.ok) {
+                    throw new Error('Failed to get session token');
+                }
+                
+                const sessionData = await tokenResponse.json();
+                const ephemeralKey = sessionData.client_secret?.value;
+                
+                if (!ephemeralKey) {
+                    throw new Error('No ephemeral key received');
+                }
+                
+                // Create RTCPeerConnection
+                pc = new RTCPeerConnection({
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                });
+                
+                // Create data channel for receiving events
+                dc = pc.createDataChannel('oai-events');
+                
+                dc.onopen = () => {
+                    console.log('Data channel opened');
+                    updateStatus('Connected - Speak into your microphone', 'active');
+                };
+                
+                dc.onmessage = (e) => {
+                    try {
+                        const event = JSON.parse(e.data);
+                        console.log('Received event:', event);
+                        
+                        // Handle the correct transcription event
+                        if (event.type === 'conversation.item.input_audio_transcription.completed') {
+                            // Extract transcript from the event
+                            const transcript = event.transcript || '';
+                            if (transcript && transcript.trim()) {
+                                addTranscriptLine(transcript);
+                                
+                                // Use debounced function to send transcript
+                                sendTranscriptToServer(transcript);
+                            }
+                        } else if (event.type === 'input_audio_buffer.speech_started') {
+                            console.log('Speech started');
+                        } else if (event.type === 'input_audio_buffer.speech_stopped') {
+                            console.log('Speech stopped');
+                        } else if (event.type === 'input_audio_buffer.committed') {
+                            console.log('Audio buffer committed');
+                        } else if (event.type === 'error') {
+                            console.error('Error event:', event);
+                        }
+                    } catch (err) {
+                        // Ignore non-JSON messages
+                        console.log('Non-JSON message:', e.data);
+                    }
+                };
+                
+                dc.onerror = (error) => {
+                    console.error('Data channel error:', error);
+                };
+                
+                // Get microphone access with cleaner settings for better transcription
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        channelCount: 1,           // Mono audio
+                        sampleRate: 16000,         // 16kHz sample rate
+                        echoCancellation: false,   // Disable to preserve phonetics
+                        noiseSuppression: false,   // Disable to preserve audio clarity
+                        autoGainControl: false     // Disable to maintain consistent audio levels
+                    } 
+                });
+                
+                // Add audio track to peer connection
+                stream.getAudioTracks().forEach(track => {
+                    pc.addTrack(track, stream);
+                });
+                
+                // Create offer
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                
+                // Send offer to OpenAI Realtime API
+                const baseUrl = 'https://api.openai.com/v1/realtime';
+                const model = 'gpt-4o-realtime-preview-2024-12-17';
+                
+                const response = await fetch(`${baseUrl}?model=${model}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${ephemeralKey}`,
+                        'Content-Type': 'application/sdp'
+                    },
+                    body: offer.sdp
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to connect: ${response.status}`);
+                }
+                
+                const answerSdp = await response.text();
+                const answer = {
+                    type: 'answer',
+                    sdp: answerSdp
+                };
+                
+                await pc.setRemoteDescription(answer);
+                
+            } catch (error) {
+                console.error('Error starting transcription:', error);
+                updateStatus(`Error: ${error.message}`, 'error');
+                stopTranscription();
+            }
+        };
+        
+        async function stopTranscription() {
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            
+            // First, stop the recording
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+            
+            dc = null;
+            
+            // Then flush any pending transcripts for immediate embedding
+            if (currentSessionId) {
+                const notification = showEmbeddingNotification('Processing transcripts...', 'processing');
+                
+                try {
+                    const response = await fetch(`/api/sessions/${currentSessionId}/flush`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.flushed) {
+                            console.log(`Flushed ${result.contentLength} chars for embedding`);
+                            notification.remove();
+                            showEmbeddingNotification(`Embedded ${result.contentLength} characters`, 'success');
+                            updateStatus('Transcription stopped', 'idle');
+                        } else {
+                            notification.remove();
+                            updateStatus('Transcription stopped', 'idle');
+                        }
+                    } else {
+                        console.error('Failed to flush session:', await response.text());
+                        notification.remove();
+                        updateStatus('Transcription stopped', 'idle');
+                    }
+                } catch (error) {
+                    console.error('Error flushing session:', error);
+                    if (notification) notification.remove();
+                    updateStatus('Transcription stopped', 'idle');
+                }
+            } else {
+                updateStatus('Transcription stopped', 'idle');
+            }
+        }
+        
+        stopBtn.onclick = stopTranscription;
+        
+        // Handle language change while transcribing
+        languageSelect.onchange = () => {
+            if (dc && dc.readyState === 'open') {
+                // Send session update to change language
+                const update = {
+                    type: 'session.update',
+                    session: {
+                        input_audio_transcription: {
+                            model: 'whisper-1',
+                            language: languageSelect.value
+                        }
+                    }
+                };
+                dc.send(JSON.stringify(update));
+                console.log('Language updated to:', languageSelect.value);
+                
+                // Add visual feedback
+                const line = document.createElement('div');
+                line.className = 'transcript-line';
+                line.style.fontStyle = 'italic';
+                line.style.color = '#667eea';
+                line.textContent = `[Language switched to ${languageSelect.options[languageSelect.selectedIndex].text}]`;
+                transcript.appendChild(line);
+            }
+        };
+        
+        // Expose Secretary methods for Sidekick integration
+        let isPaused = false;
+        let wasRecording = false;
+        
+        window.Secretary = {
+            pause() { 
+                // Pause transcription by stopping audio tracks
+                if (stream && !isPaused) {
+                    // While recording, Start is disabled. That is exactly when we should pause.
+                    wasRecording = startBtn.disabled;
+                    if (wasRecording) {
+                        // Save the state and stop
+                        isPaused = true;
+                        stream.getTracks().forEach(track => {
+                            track.enabled = false; // Disable track instead of stopping
+                        });
+                        updateStatus('Paused (Sidekick active)', 'idle');
+                        console.log('Secretary paused');
+                    }
+                }
+            },
+            resume() { 
+                // Resume transcription by re-enabling audio tracks
+                if (stream && isPaused && wasRecording) {
+                    stream.getTracks().forEach(track => {
+                        track.enabled = true; // Re-enable track
+                    });
+                    isPaused = false;
+                    updateStatus('Connected - Speak into your microphone', 'active');
+                    console.log('Secretary resumed');
+                }
+            },
+            isActive() {
+                return !startBtn.disabled && !isPaused;
+            }
+        };
+        
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            stopTranscription();
+        });
+    </script>
+    <script src="/icons.js"></script>
+    <script>
+      // Enhance UI with minimalist icons once icons.js is available
+      (function enhanceUIWithIcons() {
+        const enhance = () => {
+          if (typeof createIcon !== 'function') return;
+
+          const attach = (el, name, opts = {}) => {
+            if (!el) return;
+            try {
+              const icon = createIcon(name, { size: 'sm', ...opts });
+              el.insertBefore(icon, el.firstChild);
+            } catch (_) {}
+          };
+
+          // Primary controls
+          attach(document.getElementById('startBtn'), 'play');
+          attach(document.getElementById('stopBtn'), 'stop');
+          attach(document.getElementById('skSettingsBtn'), 'settings');
+          attach(document.getElementById('toggleSessionsBtn'), 'sessions');
+
+          // Top nav
+          const navDashboard = document.querySelector('a[href="/dashboard.html"]');
+          const navTranscribe = document.querySelector('a[href="/"]');
+          const navViewer = document.querySelector('a[href="/viewer.html"]');
+          attach(navDashboard, 'dashboard');
+          attach(navTranscribe, 'microphone');
+          attach(navViewer, 'viewer');
+        };
+
+        if (document.readyState === 'loading') {
+          window.addEventListener('DOMContentLoaded', enhance);
+        } else {
+          enhance();
+        }
+      })();
+    </script>
+</body>
+</html>

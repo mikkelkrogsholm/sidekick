@@ -6,14 +6,15 @@
     <link rel="icon" type="image/svg+xml" href="/logo.svg">
     <link rel="stylesheet" href="/styles/base.css" />
     <link rel="stylesheet" href="/styles/app.css" />
+    <link rel="stylesheet" href="/styles/tailwind.css" />
     <title>Embedded Chunks Viewer</title>
 </head>
 <body>
-    <div class="app">
+    <div class="app min-h-dvh grid grid-rows-[auto_1fr]">
         <header class="topbar">
             <div class="container topbar__inner">
                 <div class="brand">
-                    <img src="/logo.svg" alt="Voice Transcription Logo" style="height: 32px; width: auto;">
+                    <img src="/logo.svg" alt="Voice Transcription Logo" class="h-8 w-auto">
                     <h1 class="brand__title">Embeddings</h1>
                     <span class="brand__meta" id="navSession">All sessions</span>
                 </div>
@@ -28,74 +29,74 @@
             </div>
         </header>
 
-        <main class="viewer">
+        <main class="viewer min-w-0 @container">
             <div class="container stack">
-                <section class="card" style="padding: 16px;">
-                    <div class="toolbar" style="display: grid; grid-template-columns: 1fr auto auto auto; gap: 12px; align-items: center;">
+                <section class="card p-4 @sm:p-5 @md:p-6">
+                    <div class="toolbar grid grid-cols-[1fr_auto_auto_auto] gap-3 items-center">
                         <input id="searchQuery" class="input" placeholder="Search…" />
-                        <input id="searchLimit" class="input" type="number" min="1" value="5" style="width: 80px;" />
+                        <input id="searchLimit" class="input w-20" type="number" min="1" value="5" />
                         <button id="searchBtn" class="button button--primary">Search</button>
                         <button id="refreshBtn" class="button">Refresh</button>
                     </div>
                 </section>
 
-                <section class="card" style="padding: 8px 0; display: none;" id="searchResultsSection">
+                <section class="card py-2 px-0 hidden" id="searchResultsSection">
                     <div id="searchResults"></div>
                 </section>
 
-                <section class="card" style="padding: 16px;">
+                <section class="card p-4 @sm:p-5 @md:p-6">
                     <h3>Filters</h3>
-                    <div class="row" style="gap: 16px;">
-                        <select id="sessionFilter" class="input" style="flex: 1;">
+                    <div class="row gap-4">
+                        <select id="sessionFilter" class="input flex-1">
                             <option value="">All Sessions</option>
                         </select>
-                        <input id="limitInput" class="input" type="number" value="50" min="1" max="1000" style="width: 100px;" />
+                        <input id="limitInput" class="input w-24" type="number" value="50" min="1" max="1000" />
                     </div>
                 </section>
 
                 <!-- Knowledge Sources Section -->
-                <section class="card" style="padding: 16px; display: none;" id="knowledgeSection">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                        <h3 style="margin: 0;">Knowledge Sources</h3>
-                        <div id="batchActions" style="display: none; gap: 8px;">
-                            <button id="selectAllBtn" class="button button--secondary" style="padding: 6px 12px; font-size: 0.9rem;">Select All</button>
-                            <button id="batchDeleteBtn" class="button button--danger" style="padding: 6px 12px; font-size: 0.9rem;">Delete Selected (<span id="selectedCount">0</span>)</button>
+                <section class="card p-4 hidden" id="knowledgeSection">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="m-0">Knowledge Sources</h3>
+                        <div id="batchActions" class="hidden gap-2">
+                            <button id="selectAllBtn" class="button button--secondary px-3 py-1.5 text-sm">Select All</button>
+                            <button id="batchDeleteBtn" class="button button--danger px-3 py-1.5 text-sm">Delete Selected (<span id="selectedCount">0</span>)</button>
                         </div>
                     </div>
                     
                     <!-- Upload Area -->
-                    <div id="uploadArea" class="upload-area" style="border: 2px dashed var(--color-border); border-radius: 8px; padding: 20px; text-align: center; margin: 16px 0; background: var(--color-bg-secondary);">
-                        <p style="margin: 0 0 12px 0; color: var(--color-text-muted);">Drag & drop files here, or click to select</p>
-                        <input type="file" id="fileInput" accept=".txt,.md,.pdf" multiple style="display: none;" />
+                    <div id="uploadArea" class="upload-area border-2 border-dashed border-border rounded-lg p-5 text-center my-4 bg-bg-secondary">
+                        <p class="m-0 mb-3 text-text-muted">Drag & drop files here, or click to select</p>
+                        <input type="file" id="fileInput" accept=".txt,.md,.pdf" multiple class="hidden" />
                         <button id="selectFileBtn" class="button button--primary">Choose Files</button>
-                        <p style="margin: 12px 0 0 0; font-size: 0.85rem; color: var(--color-text-muted);">Supported: TXT, MD, PDF (max 10MB)</p>
+                        <p class="mt-3 mb-0 text-sm text-text-muted">Supported: TXT, MD, PDF (max 10MB)</p>
                     </div>
                     
                     <!-- Knowledge List -->
                     <!-- Upload Progress -->
-                    <div id="uploadProgress" style="display: none; margin: 16px 0; padding: 12px; background: var(--color-bg); border-radius: 8px; border: 1px solid var(--color-border);">
-                        <h4 style="margin: 0 0 12px 0;">Upload Progress</h4>
+                    <div id="uploadProgress" class="hidden my-4 p-3 bg-bg rounded-lg border border-border">
+                        <h4 class="m-0 mb-3">Upload Progress</h4>
                         <div id="uploadProgressList"></div>
                     </div>
                     
-                    <div id="knowledgeList" style="margin-top: 20px;">
-                        <div style="padding: 10px; text-align: center; color: var(--color-text-muted);">
+                    <div id="knowledgeList" class="mt-5">
+                        <div class="p-2.5 text-center text-text-muted">
                             No knowledge sources uploaded
                         </div>
                     </div>
                 </section>
 
-                <section class="card" style="padding: 16px;">
+                <section class="card p-4 @sm:p-5 @md:p-6">
                     <h3>Stats</h3>
-                    <div id="stats" class="row" style="flex-wrap: wrap; gap: 16px;">
+                    <div id="stats" class="row flex-wrap gap-4">
                         <div class="badge">Sessions: <span id="totalSessions">0</span></div>
                         <div class="badge">Avg length: <span id="avgLength">–</span></div>
                     </div>
                 </section>
 
-                <section class="card" style="padding: 8px 0;">
+                <section class="card py-2 px-0">
                     <div id="embeddingsList">
-                        <div style="padding: 20px; text-align: center; color: var(--color-text-muted);">
+                        <div class="p-5 text-center text-text-muted">
                             Loading embeddings...
                         </div>
                     </div>
@@ -199,7 +200,8 @@
                 headerDiv.style.alignItems = 'flex-start';
                 
                 const metaDiv = document.createElement('div');
-                metaDiv.style.display = 'flex';
+                metaDiv.classList.add('flex');
+                metaDiv.classList.remove('hidden');
                 metaDiv.style.flexWrap = 'wrap';
                 metaDiv.style.gap = '12px';
                 metaDiv.style.fontSize = '0.85rem';
@@ -303,10 +305,10 @@
         function updateKnowledgeSection() {
             const selectedSession = sessionFilter.value;
             if (selectedSession) {
-                knowledgeSection.style.display = 'block';
+                knowledgeSection.classList.remove('hidden');
                 loadKnowledgeSources(selectedSession);
             } else {
-                knowledgeSection.style.display = 'none';
+                knowledgeSection.classList.add('hidden');
             }
         }
         
@@ -350,12 +352,14 @@
             
             if (sources.length === 0) {
                 knowledgeList.innerHTML = '<div style="padding: 10px; text-align: center; color: var(--color-text-muted);">No knowledge sources uploaded</div>';
-                batchActions.style.display = 'none';
+                batchActions.classList.add('hidden');
+                batchActions.classList.remove('flex');
                 return;
             }
             
             // Show batch actions
-            batchActions.style.display = 'flex';
+            batchActions.classList.remove('hidden');
+            batchActions.classList.add('flex');
             
             knowledgeList.innerHTML = '';
             sources.forEach(source => {
@@ -410,7 +414,8 @@
                 }
                 
                 const actionsDiv = document.createElement('div');
-                actionsDiv.style.display = 'flex';
+                actionsDiv.classList.add('flex');
+                actionsDiv.classList.remove('hidden');
                 actionsDiv.style.gap = '8px';
                 
                 if (source.status === 'ready') {
@@ -690,7 +695,7 @@
             // Show upload progress UI
             const progressDiv = document.getElementById('uploadProgress');
             const progressList = document.getElementById('uploadProgressList');
-            progressDiv.style.display = 'block';
+            progressDiv.classList.remove('hidden');
             progressList.innerHTML = '';
             
             // Process files sequentially with a small delay to avoid rate limiting
@@ -718,7 +723,7 @@
             
             // Hide progress UI after a delay
             setTimeout(() => {
-                progressDiv.style.display = 'none';
+                progressDiv.classList.add('hidden');
             }, 3000);
         }
         
@@ -864,7 +869,7 @@
             const query = searchQuery.value.trim();
             if (!query) return;
             
-            searchResultsSection.style.display = 'block';
+            searchResultsSection.classList.remove('hidden');
             searchResults.innerHTML = '<div style="padding: 20px; text-align: center;">Searching...</div>';
             
             try {

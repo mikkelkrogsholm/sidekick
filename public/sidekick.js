@@ -56,7 +56,19 @@ async function recordConversation(userText, assistantText) {
 
 function status(msg) { 
   const el = $("#skStatus"); 
-  if (el) el.textContent = msg; 
+  if (el) el.textContent = msg;
+  
+  // Update summary panel status
+  const summaryStatus = document.getElementById("summaryStatus");
+  if (summaryStatus) {
+    if (msg === "Connected") {
+      summaryStatus.textContent = "Connected";
+      summaryStatus.className = "connected";
+    } else if (msg === "Disconnected" || msg === "Connection lost") {
+      summaryStatus.textContent = "Disconnected";
+      summaryStatus.className = "disconnected";
+    }
+  }
 }
 
 function log(text) { 

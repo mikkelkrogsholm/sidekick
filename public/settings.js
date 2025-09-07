@@ -33,8 +33,21 @@ window.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  el("skSettingsBtn")?.addEventListener("click", () => el("settingsDrawer").classList.remove("hidden"));
-  el("closeSettings")?.addEventListener("click", () => el("settingsDrawer").classList.add("hidden"));
+  // Advanced settings button now expands the settings panel
+  el("skSettingsBtn")?.addEventListener("click", () => {
+    const settingsContent = el("settingsContent");
+    const settingsToggle = el("settingsToggle");
+    if (settingsContent && settingsContent.classList.contains("hidden")) {
+      settingsContent.classList.remove("hidden");
+      settingsToggle?.classList.add("expanded");
+      localStorage.setItem("settingsExpanded", "true");
+    }
+    // Scroll to advanced settings section
+    const advancedSection = document.querySelector(".settings-section:last-child");
+    if (advancedSection) {
+      advancedSection.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  });
 });
 
 // Export for use in other modules
